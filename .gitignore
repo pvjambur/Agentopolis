@@ -1,0 +1,50 @@
+# Documentation (Claude Code context only, not for public repo)
+docs/
+
+# Claude Code
+.claude/
+.impeccable/
+
+# Environment
+passwords.env
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+dist/
+build/
+.vercel/
+.next/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.bak
+*.tmp
