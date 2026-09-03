@@ -10,6 +10,7 @@ from app.api.v1 import (
     products,
     ratings,
     shops,
+    users,
     vendor_dashboard,
     webhooks,
 )
@@ -25,4 +26,5 @@ api_router.include_router(negotiations.router, prefix="/negotiations", tags=["ne
 api_router.include_router(payments.router, prefix="/payments", tags=["payments"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 api_router.include_router(ratings.router, prefix="/ratings", tags=["ratings"])
+api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(vendor_dashboard.router, prefix="/vendor", tags=["vendor"])

@@ -11,6 +11,7 @@ import HomePage from '../pages/Home'
 import SignInPage from '../pages/auth/SignIn'
 import SignUpPage from '../pages/auth/SignUp'
 import RoleSelectPage from '../pages/onboarding/RoleSelect'
+import CharacterCreatePage from '../pages/onboarding/CharacterCreate'
 import SimulationPage from '../pages/consumer/Simulation'
 
 // Lazy placeholder stubs for Phase 1 Prompts 3–4
@@ -91,7 +92,7 @@ const roleSelectRoute = createRoute({
 const characterCreateRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/onboarding/character-create',
-  // component: CharacterCreatePage — wired in Prompt 3
+  component: CharacterCreatePage,
 })
 const vendorDashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
