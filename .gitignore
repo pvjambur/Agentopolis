@@ -48,3 +48,6 @@ docker-compose.override.yml
 # Misc
 *.bak
 *.tmp
+
+# Asset staging (raw downloads, not committed)
+asset-drop/
