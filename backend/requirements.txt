@@ -20,7 +20,7 @@ SQLAlchemy==2.0.35
 psycopg2-binary==2.9.9
 
 # Vector DB
-pinecone-client==6.0.0
+pinecone==10.0.0
 
 # LLM
 anthropic==0.116.0

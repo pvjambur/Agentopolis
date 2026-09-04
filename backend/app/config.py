@@ -1,9 +1,22 @@
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_comment_values(cls, data: object) -> object:
+        """python-dotenv 1.x stores 'KEY=  # comment' as '# comment'.
+        Treat any value whose stripped form starts with '#' as unset (None)."""
+        if not isinstance(data, dict):
+            return data
+        return {
+            k: (None if isinstance(v, str) and v.strip().startswith("#") else v)
+            for k, v in data.items()
+        }
 
     # Auth (Clerk)
     clerk_secret_key: str | None = None

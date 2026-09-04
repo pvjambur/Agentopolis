@@ -3,6 +3,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
+    internal,
     marketplace,
     missions,
     negotiations,
@@ -30,3 +31,4 @@ api_router.include_router(ratings.router, prefix="/ratings", tags=["ratings"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(wallets.router, prefix="/wallets", tags=["wallets"])
 api_router.include_router(vendor_dashboard.router, prefix="/vendor", tags=["vendor"])
+api_router.include_router(internal.router, prefix="/internal", tags=["internal"])
