@@ -1,4 +1,4 @@
-"""Shop routes — vendor creates/manages shops."""
+"""Wallet routes — read-only balance for Phase 1."""
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.middleware.auth_middleware import verify_clerk_token
@@ -7,11 +7,11 @@ router = APIRouter()
 
 
 @router.get("/mine")
-async def get_my_shops(
+async def get_my_wallet(
     request: Request,
     _: dict = Depends(verify_clerk_token),
-) -> list:
-    """Returns the authenticated vendor's shops. Empty list if none exist."""
+) -> dict:
+    """Returns the authenticated user's wallet balance. Returns 0 if no wallet row."""
     from app.db.supabase_client import get_supabase_client
 
     sb = get_supabase_client()
@@ -28,10 +28,17 @@ async def get_my_shops(
 
     user_id: str = user_row.data[0]["id"]
     result = (
-        sb.table("shops")
-        .select("id,name,domain,description,is_active,created_at")
-        .eq("vendor_id", user_id)
-        .order("created_at", desc=False)
+        sb.table("wallets")
+        .select("balance,updated_at")
+        .eq("user_id", user_id)
+        .limit(1)
         .execute()
     )
-    return result.data or []
+    if not result.data:
+        return {"balance": 0.00, "currency": "INR"}
+
+    return {
+        "balance": float(result.data[0]["balance"]),
+        "currency": "INR",
+        "updated_at": result.data[0].get("updated_at"),
+    }

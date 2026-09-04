@@ -6,53 +6,33 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router'
-import { ProtectedRoute } from '@/components/common/ProtectedRoute'
 import HomePage from '../pages/Home'
 import SignInPage from '../pages/auth/SignIn'
 import SignUpPage from '../pages/auth/SignUp'
 import RoleSelectPage from '../pages/onboarding/RoleSelect'
 import CharacterCreatePage from '../pages/onboarding/CharacterCreate'
+import VendorDashboardPage from '../pages/vendor/Dashboard'
+import ConsumerHubPage from '../pages/consumer/Hub'
 import SimulationPage from '../pages/consumer/Simulation'
-
-// Lazy placeholder stubs for Phase 1 Prompts 3–4
-function VendorDashboardPage() {
-  return (
-    <ProtectedRoute requiredRole="vendor">
-      <div className="flex items-center justify-center min-h-[calc(100vh-57px)] text-muted-foreground">
-        Vendor dashboard — built in Prompt 4
-      </div>
-    </ProtectedRoute>
-  )
-}
-
-function ConsumerHubPage() {
-  return (
-    <ProtectedRoute requiredRole="consumer">
-      <div className="flex items-center justify-center min-h-[calc(100vh-57px)] text-muted-foreground">
-        Consumer hub — built in Prompt 4
-      </div>
-    </ProtectedRoute>
-  )
-}
 
 function RootLayout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <nav className="border-b px-6 py-3 flex items-center justify-between">
-        <Link to="/" className="font-bold text-lg tracking-tight">
+      <nav className="border-b-2 border-accent-dark px-6 py-3 flex items-center justify-between">
+        <Link to="/" className="font-pixel font-bold text-xl text-primary tracking-tight">
           Agentopolis
         </Link>
         <div className="flex items-center gap-3">
           <Show when="signed-out">
             <Link
               to="/auth/sign-in"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="font-body text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Sign in
             </Link>
             <Link
               to="/auth/sign-up"
-              className="text-sm font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity"
+              className="btn-pixel btn-pixel-sm btn-pixel-primary"
             >
               Sign up
             </Link>

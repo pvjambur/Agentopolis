@@ -1,2 +1,149 @@
+/* Google Fonts — must precede all other rules */
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 @import "tailwindcss";
 @import "@clerk/ui/themes/shadcn.css";
+
+@theme {
+  /* Agentopolis pixel palette — locked hex values, do not substitute */
+  --color-primary:              #5FA632;
+  --color-primary-dark:         #3D7A1F;
+  --color-primary-light:        #8FD457;
+  --color-primary-foreground:   #ffffff;
+
+  --color-secondary:            #3B82C4;
+  --color-secondary-dark:       #2563A0;
+  --color-secondary-light:      #6FAEE0;
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent:               #8B5A2B;
+  --color-accent-dark:          #6B4319;
+  --color-accent-foreground:    #ffffff;
+
+  --color-panel:                #F5F0E1;
+  --color-panel-dark:           #2B2B2B;
+
+  --color-danger:               #C93A3A;
+  --color-danger-dark:          #8B2020;
+  --color-danger-foreground:    #ffffff;
+
+  --color-warning:              #E8A93B;
+  --color-warning-dark:         #B07A1A;
+  --color-warning-foreground:   #1A1A1A;
+
+  /* Font stacks */
+  --font-pixel: 'Pixelify Sans', sans-serif;
+  --font-body:  'Inter', sans-serif;
+}
+
+/* Sprite walk-cycle: alternate visibility between two frames at steps */
+@keyframes walkcycle {
+  0%,  49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@layer components {
+  /* ─── Pixel Buttons ─────────────────────────────────────────── */
+  .btn-pixel {
+    font-family: 'Pixelify Sans', sans-serif;
+    border-style: solid;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+    transition: background-color 0.08s, transform 0.08s, box-shadow 0.08s;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .btn-pixel:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .btn-pixel:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  /* Size modifiers */
+  .btn-pixel-lg { padding: 12px 28px; font-size: 1rem;    border-width: 4px; }
+  .btn-pixel-md { padding: 10px 24px; font-size: 0.9rem;  border-width: 4px; }
+  .btn-pixel-sm { padding:  6px 14px; font-size: 0.78rem; border-width: 3px; }
+
+  /* Primary (green) */
+  .btn-pixel-primary {
+    background-color: #5FA632;
+    border-color: #3D7A1F;
+    box-shadow: 4px 4px 0 #3D7A1F;
+    color: #ffffff;
+  }
+  .btn-pixel-primary:hover:not(:disabled)  { background-color: #8FD457; }
+  .btn-pixel-primary:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 #3D7A1F; }
+  .btn-pixel-sm.btn-pixel-primary                          { box-shadow: 3px 3px 0 #3D7A1F; }
+  .btn-pixel-sm.btn-pixel-primary:active:not(:disabled)   { transform: translate(3px, 3px); box-shadow: 0 0 0 #3D7A1F; }
+
+  /* Secondary (blue) */
+  .btn-pixel-secondary {
+    background-color: #3B82C4;
+    border-color: #2563A0;
+    box-shadow: 4px 4px 0 #2563A0;
+    color: #ffffff;
+  }
+  .btn-pixel-secondary:hover:not(:disabled)  { background-color: #6FAEE0; }
+  .btn-pixel-secondary:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 #2563A0; }
+  .btn-pixel-sm.btn-pixel-secondary                        { box-shadow: 3px 3px 0 #2563A0; }
+  .btn-pixel-sm.btn-pixel-secondary:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 #2563A0; }
+
+  /* Danger (red) */
+  .btn-pixel-danger {
+    background-color: #C93A3A;
+    border-color: #8B2020;
+    box-shadow: 4px 4px 0 #8B2020;
+    color: #ffffff;
+  }
+  .btn-pixel-danger:hover:not(:disabled)  { background-color: #E05252; }
+  .btn-pixel-danger:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 #8B2020; }
+  .btn-pixel-sm.btn-pixel-danger                        { box-shadow: 3px 3px 0 #8B2020; }
+  .btn-pixel-sm.btn-pixel-danger:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 #8B2020; }
+
+  /* ─── Blocky Panels ──────────────────────────────────────────── */
+  .panel-block {
+    background-color: #2B2B2B;
+    border: 4px solid #6B4319;
+    border-radius: 6px;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.30);
+  }
+  .panel-block-light {
+    background-color: #F5F0E1;
+    border: 4px solid #6B4319;
+    border-radius: 6px;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.12);
+    color: #1A1A1A;
+  }
+  /* Selection state overrides — declared after base so same-layer cascade wins */
+  .panel-block-sel-primary   { border-color: #5FA632; box-shadow: 6px 6px 0 rgba(95, 166, 50, 0.35); }
+  .panel-block-sel-secondary { border-color: #3B82C4; box-shadow: 6px 6px 0 rgba(59, 130, 196, 0.35); }
+
+  /* ─── Pixel Badges ───────────────────────────────────────────── */
+  .badge-pixel {
+    font-family: 'Pixelify Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 2px;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.5;
+  }
+  .badge-pixel-primary   { background-color: rgba(95, 166, 50, 0.12);  border-color: #5FA632; color: #8FD457; }
+  .badge-pixel-secondary { background-color: rgba(59, 130, 196, 0.12); border-color: #3B82C4; color: #6FAEE0; }
+  .badge-pixel-warning   { background-color: rgba(232, 169, 59, 0.12); border-color: #E8A93B; color: #E8A93B; }
+  .badge-pixel-danger    { background-color: rgba(201, 58, 58, 0.12);  border-color: #C93A3A; color: #E05252; }
+}

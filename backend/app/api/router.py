@@ -12,6 +12,7 @@ from app.api.v1 import (
     shops,
     users,
     vendor_dashboard,
+    wallets,
     webhooks,
 )
 
@@ -27,4 +28,5 @@ api_router.include_router(payments.router, prefix="/payments", tags=["payments"]
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 api_router.include_router(ratings.router, prefix="/ratings", tags=["ratings"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(wallets.router, prefix="/wallets", tags=["wallets"])
 api_router.include_router(vendor_dashboard.router, prefix="/vendor", tags=["vendor"])

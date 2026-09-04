@@ -6,6 +6,28 @@ from app.middleware.auth_middleware import verify_clerk_token
 
 router = APIRouter()
 
+
+@router.get("/me")
+async def get_me(
+    request: Request,
+    _: dict = Depends(verify_clerk_token),
+) -> dict:
+    """Returns the authenticated user's profile from Supabase."""
+    from app.db.supabase_client import get_supabase_client
+
+    row = (
+        get_supabase_client()
+        .table("users")
+        .select("id,clerk_id,role,display_name,avatar_config,created_at")
+        .eq("clerk_id", request.state.clerk_id)
+        .limit(1)
+        .execute()
+    )
+    if not row.data:
+        raise HTTPException(status_code=404, detail="User not found — call /auth/sync first")
+    return row.data[0]
+
+
 _VALID_CHARACTER_TYPES = frozenset(
     {
         "char_A_green_top",
