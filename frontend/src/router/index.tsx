@@ -73,12 +73,12 @@ const indexRoute = createRoute({
 })
 const signInRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/auth/sign-in',
+  path: '/auth/sign-in/$',
   component: SignInPage,
 })
 const signUpRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/auth/sign-up',
+  path: '/auth/sign-up/$',
   component: SignUpPage,
 })
 const roleSelectRoute = createRoute({

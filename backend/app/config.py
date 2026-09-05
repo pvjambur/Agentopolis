@@ -10,11 +10,11 @@ class Settings(BaseSettings):
     @classmethod
     def _strip_comment_values(cls, data: object) -> object:
         """python-dotenv 1.x stores 'KEY=  # comment' as '# comment'.
-        Treat any value whose stripped form starts with '#' as unset (None)."""
+        Treat any value whose stripped form starts with '#' or is empty as unset (None)."""
         if not isinstance(data, dict):
             return data
         return {
-            k: (None if isinstance(v, str) and v.strip().startswith("#") else v)
+            k: (None if isinstance(v, str) and (v.strip().startswith("#") or not v.strip()) else v)
             for k, v in data.items()
         }
 

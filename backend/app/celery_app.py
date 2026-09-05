@@ -3,18 +3,21 @@
 Upstash Redis uses rediss:// (TLS). Celery requires an explicit ssl_cert_reqs
 parameter on rediss URLs, so we append it if missing.
 """
+import os
 from celery import Celery
 
 from app.config import settings
 
 
 def _normalize_rediss(url: str | None) -> str:
-    if not url:
-        return "redis://localhost:6379/0"
-    if url.startswith("rediss://") and "ssl_cert_reqs" not in url:
-        sep = "&" if "?" in url else "?"
-        return f"{url}{sep}ssl_cert_reqs=CERT_NONE"
-    return url
+    if not url or not str(url).strip():
+        default_host = os.getenv("REDIS_HOST", "redis")
+        return f"redis://{default_host}:6379/0"
+    url_str = str(url).strip()
+    if url_str.startswith("rediss://") and "ssl_cert_reqs" not in url_str:
+        sep = "&" if "?" in url_str else "?"
+        return f"{url_str}{sep}ssl_cert_reqs=CERT_NONE"
+    return url_str
 
 
 _broker = _normalize_rediss(settings.celery_broker_url or settings.upstash_redis_url)

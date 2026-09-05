@@ -120,7 +120,12 @@ function HeroPhaserCanvas() {
       type: Phaser.AUTO,
       parent: containerRef.current,
       backgroundColor: '#1a2f1a',
-      scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 640,
+        height: 480,
+      },
       scene: [],
     })
     game.scene.add('HeroScene', HeroScene, true)
@@ -129,7 +134,11 @@ function HeroPhaserCanvas() {
     return () => { game.destroy(true); gameRef.current = null }
   }, [])
 
-  return <div ref={containerRef} className="w-full h-full" />
+  return (
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
+    </div>
+  )
 }
 
 // ─── LandingMiniScene Phaser canvas (lazy via IntersectionObserver) ────────────
@@ -160,7 +169,12 @@ function WasdPhaserCanvas() {
       parent: containerRef.current,
       backgroundColor: '#1a2f1a',
       physics: { default: 'arcade', arcade: { debug: false } },
-      scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.CENTER_BOTH },
+      scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 640,
+        height: 480,
+      },
       scene: [],
     })
     game.scene.add('LandingMiniScene', LandingMiniScene, true)
@@ -179,16 +193,16 @@ function WasdPhaserCanvas() {
   }, [live, hintVisible])
 
   return (
-    <div ref={wrapperRef} className="relative w-full h-full">
+    <div ref={wrapperRef} className="relative w-full h-full overflow-hidden flex items-center justify-center">
       {live ? (
         <>
-          <div ref={containerRef} className="w-full h-full" />
+          <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
           {hintVisible && (
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.2, duration: 0.4 }}
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none"
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none z-10"
             >
               <div className="panel-block px-4 py-2 flex items-center gap-3">
                 <span className="font-pixel text-[11px] text-zinc-400">WASD</span>
@@ -279,19 +293,19 @@ function HeroSection() {
       </div>
 
       {/* Right column — live Phaser diorama */}
-      <div className="flex-1 flex items-center justify-center px-6 md:pr-10 md:pl-0 py-8 md:py-10 order-1 md:order-2" style={{ minHeight: '360px' }}>
+      <div className="flex-1 flex items-center justify-center px-6 md:pr-10 md:pl-0 py-8 md:py-10 order-1 md:order-2">
         <div
-          className="diorama-persp relative w-full h-full"
-          style={{ perspective: '1200px', perspectiveOrigin: '50% 38%', maxHeight: 'calc(100vh - 140px)' }}
+          className="diorama-persp relative w-full h-[420px] md:h-[480px] flex items-center justify-center"
+          style={{ perspective: '1200px', perspectiveOrigin: '50% 50%' }}
         >
           <div
-            className="diorama-tilt relative w-full h-full overflow-hidden"
+            className="diorama-tilt relative w-full h-full overflow-hidden flex items-center justify-center"
             style={{
-              transform: 'rotateX(14deg) rotateY(-8deg)',
+              transform: 'rotateX(10deg) rotateY(-4deg)',
               border: '4px solid #3D7A1F',
-              borderRadius: '4px',
-              boxShadow: '8px 8px 0 #050a05, 0 0 80px rgba(95,166,50,0.18), inset 0 0 40px rgba(0,0,0,0.5)',
-              minHeight: '300px',
+              borderRadius: '6px',
+              boxShadow: '8px 8px 0 #050a05, 0 0 80px rgba(95,166,50,0.22), inset 0 0 40px rgba(0,0,0,0.5)',
+              background: '#1a2f1a',
             }}
           >
             <HeroPhaserCanvas />
@@ -740,12 +754,12 @@ function WasdSection() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.55 }}
-          className="relative"
+          className="relative flex items-center justify-center"
           style={{ height: '460px' }}
         >
           <div
-            className="w-full h-full overflow-hidden"
-            style={{ border: '4px solid #3D7A1F', boxShadow: '6px 6px 0 #050a05, 0 0 40px rgba(95,166,50,0.14)' }}
+            className="w-full h-full overflow-hidden flex items-center justify-center rounded-md"
+            style={{ border: '4px solid #3D7A1F', boxShadow: '6px 6px 0 #050a05, 0 0 40px rgba(95,166,50,0.14)', background: '#1a2f1a' }}
           >
             <WasdPhaserCanvas />
           </div>

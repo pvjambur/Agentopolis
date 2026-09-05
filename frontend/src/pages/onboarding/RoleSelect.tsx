@@ -1,6 +1,6 @@
 import { useUser } from '@clerk/react'
 import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import apiClient from '@/services/api'
 
@@ -32,12 +32,23 @@ export default function RoleSelectPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Already has a role → skip straight to dashboard
-  if (isLoaded && user) {
-    const existing = user.unsafeMetadata?.role as string | undefined
-    if (existing === 'vendor') { navigate({ to: '/vendor/dashboard' }); return null }
-    if (existing === 'consumer') { navigate({ to: '/consumer/hub' }); return null }
-  }
+  // Already has a role → sync with backend then skip straight to dashboard
+  useEffect(() => {
+    if (isLoaded && user) {
+      const existing = user.unsafeMetadata?.role as string | undefined
+      if (existing === 'vendor' || existing === 'consumer') {
+        apiClient
+          .post('/v1/auth/sync', {
+            role: existing,
+            display_name: user.fullName ?? user.primaryEmailAddress?.emailAddress ?? '',
+          })
+          .catch(() => {})
+          .finally(() => {
+            navigate({ to: existing === 'vendor' ? '/vendor/dashboard' : '/consumer/hub' })
+          })
+      }
+    }
+  }, [isLoaded, user, navigate])
 
   async function handleConfirm() {
     if (!selected || !user) return

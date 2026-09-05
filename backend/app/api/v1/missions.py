@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from app.db.supabase_client import get_supabase_client
@@ -18,6 +18,33 @@ class MissionCreate(BaseModel):
     instruction_text: str
     budget: float | None = None
     mode: str = "single"
+
+
+@router.get("")
+async def list_missions(
+    request: Request,
+    status: str | None = Query(default=None),
+    mode: str | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    _: dict = Depends(verify_clerk_token),
+) -> list:
+    """Lists missions for the authenticated consumer, filterable by status and mode."""
+    sb = get_supabase_client()
+
+    user_row = sb.table("users").select("id").eq("clerk_id", request.state.clerk_id).limit(1).execute()
+    if not user_row.data:
+        return []
+
+    consumer_id = user_row.data[0]["id"]
+    query = sb.table("missions").select("*").eq("consumer_id", consumer_id)
+
+    if status:
+        query = query.eq("status", status)
+    if mode:
+        query = query.eq("mode", mode)
+
+    result = query.order("created_at", desc=True).limit(limit).execute()
+    return result.data or []
 
 
 @router.post("", status_code=202)

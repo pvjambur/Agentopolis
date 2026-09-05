@@ -24,9 +24,15 @@ async def get_my_wallet(
         .execute()
     )
     if not user_row.data:
-        raise HTTPException(status_code=404, detail="User not found")
+        user_res = (
+            sb.table("users")
+            .insert({"clerk_id": request.state.clerk_id, "role": "vendor"})
+            .execute()
+        )
+        user_id = user_res.data[0]["id"]
+    else:
+        user_id = user_row.data[0]["id"]
 
-    user_id: str = user_row.data[0]["id"]
     result = (
         sb.table("wallets")
         .select("balance,updated_at")
@@ -35,7 +41,18 @@ async def get_my_wallet(
         .execute()
     )
     if not result.data:
-        return {"balance": 0.00, "currency": "INR"}
+        try:
+            ins = (
+                sb.table("wallets")
+                .insert({"user_id": user_id, "balance": 1000.00, "currency": "INR"})
+                .execute()
+            )
+            balance = float(ins.data[0]["balance"])
+            updated_at = ins.data[0].get("updated_at")
+        except Exception:
+            balance = 1000.00
+            updated_at = None
+        return {"balance": balance, "currency": "INR", "updated_at": updated_at}
 
     return {
         "balance": float(result.data[0]["balance"]),

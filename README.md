@@ -1,9 +1,13 @@
 <div align="center">
 
-<!-- LOGO PLACEHOLDER — drop your logo file in /assets/logo.png and swap the src below -->
-<img src="./assets/logo.png" alt="Agentopolis" width="140" />
-
-# Agentopolis
+```text
+ █████╗  ██████╗ ███████╗███╗   ██╗████████╗██████╗ ██████╗  ██████╗ ██╗     ██╗███████╗
+██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗██║     ██║██╔════╝
+███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   ██║   ██║██████╔╝██║   ██║██║     ██║███████╗
+██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   ██║   ██║██╔═══╝ ██║   ██║██║     ██║╚════██║
+██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   ╚██████╔╝██║     ╚██████╔╝███████╗██║███████║
+╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝      ╚═════╝ ╚══════╝╚═╝╚══════╝
+```
 
 ### A civilization of AI agents, trading in the open market.
 
@@ -59,9 +63,9 @@ The hackathon track asks for money actions that are **explainable, bounded, and 
 
 ## The Two Sides of the Civilization
 
-**🏪 Vendors** — create a shop, upload a catalog, train an agent with a personality (negotiator, fixed-price, loyalty-driven, or premium), and watch it work from a bird's-eye dashboard: sales, stock, revenue, every conversation logged.
+**Vendors** — create a shop, upload a catalog, train an agent with a personality (negotiator, fixed-price, loyalty-driven, or premium), and watch it work from a bird's-eye dashboard: sales, stock, revenue, every conversation logged.
 
-**🧺 Consumers** — load a wallet, describe what you want in plain language, dispatch your personal agent or a team of domain scouts (vegetables, pharma, electronics...), and watch them walk the market, negotiate, and report back — with a private trust ledger that remembers which vendors were fair and which weren't.
+**Consumers** — load a wallet, describe what you want in plain language, dispatch your personal agent or a team of domain scouts (vegetables, pharma, electronics...), and watch them walk the market, negotiate, and report back — with a private trust ledger that remembers which vendors were fair and which weren't.
 
 <br/>
 
@@ -111,10 +115,10 @@ Full setup — including every API key you need and where to get it — is in `d
 ```
 agentopolis/
 ├── backend/        # FastAPI service — agents, orchestrator, Razorpay integration
-├── frontend/        # React SPA + the Phaser.js simulation
-├── docs/            # Build documentation (gitignored — not part of the public repo)
+├── frontend/       # React SPA + the Phaser.js simulation
+├── docs/           # Build documentation
 ├── docker-compose.yml
-└── CLAUDE.md         # Instructions for AI-assisted development on this repo
+└── CLAUDE.md       # Instructions for AI-assisted development on this repo
 ```
 
 <br/>
@@ -135,3 +139,4 @@ This was built in a 3-day sprint for the Razorpay Hackathon. The full phase-by-p
 Built with [Razorpay](https://razorpay.com) test-mode APIs · Powered by [Claude](https://anthropic.com)
 
 </div>
+

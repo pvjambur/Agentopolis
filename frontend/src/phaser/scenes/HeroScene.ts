@@ -96,32 +96,12 @@ export class HeroScene extends Phaser.Scene {
     this.buildAnimations()
     this.spawnNpcs()
 
-    const zoom = 2.0
+    const zoom = 1.0
+    const cx = (MAP_W * TILE) / 2 // 320
+    const cy = (MAP_H * TILE) / 2 // 240
     this.cameras.main.setZoom(zoom)
     this.cameras.main.setBounds(0, 0, MAP_W * TILE, MAP_H * TILE)
-
-    // Center camera on the main path area (y≈14, mid-x)
-    const cx = 300
-    const cy = 220
-    const displayW = this.cameras.main.width / zoom
-    const displayH = this.cameras.main.height / zoom
-    const scroll = {
-      x: cx - displayW / 2,
-      y: cy - displayH / 2,
-    }
-    this.cameras.main.setScroll(scroll.x, scroll.y)
-
-    // Slow ambient drift — tween the scroll object, apply in onUpdate
-    this.tweens.add({
-      targets: scroll,
-      x: scroll.x + 64,
-      y: scroll.y + 28,
-      duration: 9000,
-      ease: 'Sine.easeInOut',
-      yoyo: true,
-      repeat: -1,
-      onUpdate: () => this.cameras.main.setScroll(scroll.x, scroll.y),
-    })
+    this.cameras.main.centerOn(cx, cy)
   }
 
   private bakeLayer(map: Phaser.Tilemaps.Tilemap, layerName: string, depth: number): void {

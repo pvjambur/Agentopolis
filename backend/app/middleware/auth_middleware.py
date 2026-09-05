@@ -50,14 +50,20 @@ async def verify_clerk_token(request: Request) -> dict:
             token,
             signing_key.key,
             algorithms=["RS256"],
-            # Clerk issues 'azp' not 'aud'; skip audience check
             options={"verify_aud": False},
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.InvalidTokenError as exc:
-        logger.warning("JWT validation failed: %s", exc)
-        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as exc:
+        if settings.app_env == "local":
+            logger.warning("JWT JWKS verification failed in local mode (%s); falling back to unverified payload", exc)
+            try:
+                payload = jwt.decode(token, options={"verify_signature": False, "verify_aud": False})
+            except Exception:
+                raise HTTPException(status_code=401, detail="Invalid token")
+        else:
+            logger.warning("JWT validation failed: %s", exc)
+            raise HTTPException(status_code=401, detail="Invalid token")
 
     clerk_id: str = payload.get("sub", "")
     request.state.clerk_id = clerk_id
@@ -67,18 +73,42 @@ async def verify_clerk_token(request: Request) -> dict:
     if settings.supabase_url and settings.supabase_service_role_key:
         try:
             from app.db.supabase_client import get_supabase_client
+            sb = get_supabase_client()
             row = (
-                get_supabase_client()
+                sb
                 .table("users")
-                .select("role")
+                .select("id, role")
                 .eq("clerk_id", clerk_id)
                 .limit(1)
                 .execute()
             )
             if row.data:
                 role = row.data[0].get("role")
+            else:
+                # Auto-provision user row in Supabase on first authenticated request
+                display_name = payload.get("name") or payload.get("email") or None
+                insert_res = (
+                    sb.table("users")
+                    .insert({
+                        "clerk_id": clerk_id,
+                        "role": "vendor",  # default to vendor if not synced yet
+                        "display_name": display_name,
+                    })
+                    .execute()
+                )
+                if insert_res.data:
+                    user_id = insert_res.data[0]["id"]
+                    role = "vendor"
+                    try:
+                        sb.table("wallets").insert({
+                            "user_id": user_id,
+                            "balance": 1000.00,
+                            "currency": "INR",
+                        }).execute()
+                    except Exception as w_exc:
+                        logger.warning("Wallet auto-provision notice: %s", w_exc)
         except Exception as exc:
-            logger.warning("Role lookup failed for clerk_id=%s: %s", clerk_id, exc)
+            logger.warning("Role lookup/provision failed for clerk_id=%s: %s", clerk_id, exc)
 
     request.state.role = role
     return payload
