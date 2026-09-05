@@ -46,6 +46,13 @@ export interface Mission {
   negotiations: Negotiation[]
 }
 
+export interface PaymentOrder {
+  order_id: string
+  amount: number
+  currency: string
+  negotiation_id: string
+}
+
 export const missionService = {
   create: (body: MissionCreate) =>
     apiClient
@@ -55,7 +62,7 @@ export const missionService = {
   get: (missionId: string) =>
     apiClient.get<Mission>(`/v1/missions/${missionId}`).then((r) => r.data),
 
-  /** Phase 2 mock approval. Phase 3 body becomes real Razorpay — signature unchanged. */
+  /** Phase 2 mock approval. Kept intact for PAYMENT_MODE=mock. */
   approveMockPayment: (negotiationId: string) =>
     apiClient
       .post<{ success: boolean; mock_transaction_ref: string; already_paid?: boolean }>(
@@ -63,4 +70,25 @@ export const missionService = {
         { negotiation_id: negotiationId },
       )
       .then((r) => r.data),
+
+  /** Phase 3 live: create a Razorpay order for Checkout.js. */
+  createPaymentOrder: (negotiationId: string) =>
+    apiClient
+      .post<PaymentOrder>('/v1/payments/create-order', { negotiation_id: negotiationId })
+      .then((r) => r.data),
+
+  /** Optimistic UI confirmation after Checkout.js handler fires (webhook is source of truth). */
+  verifyPayment: (body: {
+    negotiation_id: string
+    razorpay_payment_id: string
+    razorpay_order_id: string
+    razorpay_signature: string
+  }) =>
+    apiClient
+      .post<{ status: string; payment_id: string }>('/v1/payments/verify', body)
+      .then((r) => r.data),
+
+  /** Returns current PAYMENT_MODE so the frontend branches mock vs. live. */
+  getPaymentMode: () =>
+    apiClient.get<{ mode: string }>('/v1/payments/mode').then((r) => r.data),
 }

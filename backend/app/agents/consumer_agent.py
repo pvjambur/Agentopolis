@@ -135,13 +135,16 @@ class ConsumerAgent:
     # ── 2. Route planning (Pinecone + multi-factor scoring) ───────────────────
 
     def get_personal_rating(self, shop_id: str) -> float:
-        """Stub for this phase — ratings table doesn't exist until Phase 3.
+        """Return this consumer's average rating for a shop from the ratings table.
 
-        Always returns a neutral default so the scoring formula still works
-        correctly (personal rating is just a no-op weight this phase, not a
-        bug — the formula degrades gracefully to price + semantic-match only).
+        Falls back to 3.0 (neutral) for never-visited shops or on any DB error,
+        so the scoring formula always has a valid number regardless.
         """
-        return 3.0
+        try:
+            from app.services.rating_service import get_avg_rating
+            return get_avg_rating(self.config.user_id, shop_id)
+        except Exception:
+            return 3.0
 
     def plan_route(self, shopping_list: list[dict]) -> list[dict]:
         """Semantic-match each item to candidate products, score, rank top 3.

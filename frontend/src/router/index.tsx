@@ -20,6 +20,11 @@ import ConsumerMarketplacePage from '../pages/consumer/Marketplace'
 import ConsumerAgentTrainPage from '../pages/consumer/AgentTrain'
 import SimulationPage from '../pages/consumer/Simulation'
 import MissionNewPage from '../pages/consumer/MissionNew'
+import RatingsPage from '../pages/consumer/Ratings'
+import VendorReportsPage from '../pages/vendor/Reports'
+import VendorTransactionsPage from '../pages/vendor/Transactions'
+import ConsumerTransactionsPage from '../pages/consumer/Transactions'
+import ConsumerBasketPage from '../pages/consumer/Basket'
 
 function RootLayout() {
   const { location } = useRouterState()
@@ -131,6 +136,36 @@ const consumerMissionNewRoute = createRoute({
   component: MissionNewPage,
 })
 
+const consumerRatingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consumer/ratings',
+  component: RatingsPage,
+})
+
+const vendorReportsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/vendor/reports',
+  component: VendorReportsPage,
+})
+
+const vendorTransactionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/vendor/transactions',
+  component: VendorTransactionsPage,
+})
+
+const consumerTransactionsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consumer/transactions',
+  component: ConsumerTransactionsPage,
+})
+
+const consumerBasketRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consumer/basket',
+  component: ConsumerBasketPage,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   signInRoute,
@@ -145,6 +180,11 @@ const routeTree = rootRoute.addChildren([
   consumerAgentTrainRoute,
   consumerSimulationRoute,
   consumerMissionNewRoute,
+  consumerRatingsRoute,
+  vendorReportsRoute,
+  vendorTransactionsRoute,
+  consumerTransactionsRoute,
+  consumerBasketRoute,
 ])
 
 export const router = createRouter({ routeTree })

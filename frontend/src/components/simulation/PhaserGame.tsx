@@ -1,9 +1,9 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import Phaser from 'phaser'
-import { MarketplaceScene, type ShopClickedData } from '@/phaser/scenes/MarketplaceScene'
+import { MarketplaceScene, type ShopClickedData, type AgentClickedData } from '@/phaser/scenes/MarketplaceScene'
 import { type CharacterType } from '@/data/characterSpriteMap'
 
-export type { ShopClickedData }
+export type { ShopClickedData, AgentClickedData }
 
 export interface PhaserGameHandle {
   /** Emit an event directly into the MarketplaceScene event bus. */
@@ -17,17 +17,18 @@ export interface PhaserGameHandle {
 interface PhaserGameProps {
   avatarConfig?: { character_type?: CharacterType }
   onShopClicked?: (shop: ShopClickedData) => void
+  onAgentClicked?: (agent: AgentClickedData) => void
 }
 
 export const PhaserGame = forwardRef<PhaserGameHandle, PhaserGameProps>(
-  ({ avatarConfig, onShopClicked }, ref) => {
+  ({ avatarConfig, onShopClicked, onAgentClicked }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null)
     const gameRef = useRef<Phaser.Game | null>(null)
     const onShopClickedRef = useRef(onShopClicked)
+    const onAgentClickedRef = useRef(onAgentClicked)
 
-    useEffect(() => {
-      onShopClickedRef.current = onShopClicked
-    }, [onShopClicked])
+    useEffect(() => { onShopClickedRef.current = onShopClicked }, [onShopClicked])
+    useEffect(() => { onAgentClickedRef.current = onAgentClicked }, [onAgentClicked])
 
     useImperativeHandle(ref, () => {
       const emit = (event: string, data?: unknown) => {
@@ -70,6 +71,9 @@ export const PhaserGame = forwardRef<PhaserGameHandle, PhaserGameProps>(
         if (!scene) return
         scene.events.on('shop-clicked', (data: ShopClickedData) => {
           onShopClickedRef.current?.(data)
+        })
+        scene.events.on('agent-clicked', (data: AgentClickedData) => {
+          onAgentClickedRef.current?.(data)
         })
       })
 

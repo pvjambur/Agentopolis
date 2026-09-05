@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
-import { Sword } from 'lucide-react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Sword, Users, Zap } from 'lucide-react'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
 import { useCreateMission } from '@/hooks/useMission'
 
@@ -13,9 +13,11 @@ const EXAMPLE_INSTRUCTIONS = [
 function MissionNewInner() {
   const navigate = useNavigate()
   const createMission = useCreateMission()
-
+  // Pre-select swarm mode if linked from Hub's "Swarm Mission" button
+  const search = useSearch({ strict: false }) as Record<string, string>
   const [instruction, setInstruction] = useState('')
   const [budget, setBudget] = useState('')
+  const [mode, setMode] = useState<'single' | 'swarm'>(search.swarm === '1' ? 'swarm' : 'single')
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -29,7 +31,7 @@ function MissionNewInner() {
       const result = await createMission.mutateAsync({
         instruction_text: instruction.trim(),
         budget: budget ? parseFloat(budget) : undefined,
-        mode: 'single',
+        mode,
       })
       navigate({
         to: '/consumer/simulation',
@@ -58,6 +60,32 @@ function MissionNewInner() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Mode selector */}
+            <div>
+              <label className="font-pixel text-[11px] text-zinc-300 uppercase tracking-wide block mb-2">
+                Mode
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['single', 'swarm'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    className={`panel-block p-3 flex items-center gap-2 transition-colors ${
+                      mode === m ? 'border-primary bg-primary/10' : 'hover:border-zinc-600'
+                    }`}
+                  >
+                    {m === 'single' ? <Users size={14} className="text-primary" /> : <Zap size={14} className="text-secondary" />}
+                    <div className="text-left">
+                      <p className="font-pixel text-[11px] text-white capitalize">{m}</p>
+                      <p className="font-body text-[10px] text-zinc-500">
+                        {m === 'single' ? 'One agent, all items' : 'Parallel scouts per domain'}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* Shopping instruction */}
             <div>
               <label className="font-pixel text-[11px] text-zinc-300 uppercase tracking-wide block mb-2">

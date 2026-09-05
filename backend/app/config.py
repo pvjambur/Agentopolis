@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # App Config
     app_env: str = "local"
     frontend_url: str = "http://localhost:5173"
+    # Payment mode toggle — mock keeps Phase 2 flow intact for demo safety;
+    # live fires real Razorpay Checkout + webhook confirmation.
+    payment_mode: str = "mock"
 
 
 settings = Settings()

@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { useUser } from '@clerk/react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Package, Store, TrendingUp } from 'lucide-react'
+import { CheckCircle, Clock, Package, Plus, Store, TrendingUp } from 'lucide-react'
 import {
   Area,
   AreaChart,
@@ -14,6 +15,23 @@ import { AppShell } from '@/components/layout/AppShell'
 import { EmptyState } from '@/components/common/EmptyState'
 import { StatCard } from '@/components/common/StatCard'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import apiClient from '@/services/api'
 
@@ -24,6 +42,8 @@ interface Shop {
   description: string | null
   is_active: boolean
   created_at: string
+  payment_status: 'connected' | 'pending'
+  razorpay_linked_account_id: string | null
 }
 
 interface UserProfile {
@@ -33,14 +53,30 @@ interface UserProfile {
   avatar_config: { character_type?: string } | null
 }
 
+interface ShopCreateBody {
+  name: string
+  domain: string
+  description?: string
+}
+
+const DOMAIN_OPTIONS = [
+  { value: 'vegetables', label: 'Vegetables' },
+  { value: 'fruits',     label: 'Fruits' },
+  { value: 'grocery',    label: 'Grocery' },
+  { value: 'pharma',     label: 'Pharma' },
+  { value: 'electronics', label: 'Electronics' },
+  { value: 'furniture',  label: 'Furniture' },
+  { value: 'bakery',     label: 'Bakery' },
+]
+
 const DOMAIN_LABELS: Record<string, string> = {
-  vegetables: '🥦 Vegetables',
-  fruits: '🍎 Fruits',
-  grocery: '🛒 Grocery',
-  pharma: '💊 Pharma',
-  electronics: '⚡ Electronics',
-  furniture: '🪑 Furniture',
-  bakery: '🍞 Bakery',
+  vegetables:  'Vegetables',
+  fruits:      'Fruits',
+  grocery:     'Grocery',
+  pharma:      'Pharma',
+  electronics: 'Electronics',
+  furniture:   'Furniture',
+  bakery:      'Bakery',
 }
 
 const CARD_VARIANTS = {
@@ -50,6 +86,20 @@ const CARD_VARIANTS = {
     y: 0,
     transition: { duration: 0.3, delay: i * 0.07, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
+}
+
+function PaymentBadge({ status }: { status: 'connected' | 'pending' }) {
+  return status === 'connected' ? (
+    <span className="inline-flex items-center gap-1 badge-pixel badge-pixel-primary text-[9px]">
+      <CheckCircle size={8} />
+      Payments Connected
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 badge-pixel badge-pixel-warning text-[9px]">
+      <Clock size={8} />
+      Payments Pending
+    </span>
+  )
 }
 
 function ShopCard({ shop }: { shop: Shop }) {
@@ -73,6 +123,7 @@ function ShopCard({ shop }: { shop: Shop }) {
           {!shop.is_active && (
             <span className="badge-pixel badge-pixel-warning">Inactive</span>
           )}
+          <PaymentBadge status={shop.payment_status} />
         </div>
         {shop.description && (
           <p className="font-body text-xs text-zinc-400 mt-1 leading-relaxed">{shop.description}</p>
@@ -82,6 +133,124 @@ function ShopCard({ shop }: { shop: Shop }) {
         </p>
       </div>
     </motion.div>
+  )
+}
+
+function CreateShopDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const qc = useQueryClient()
+  const [name, setName] = useState('')
+  const [domain, setDomain] = useState('')
+  const [description, setDescription] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const mutation = useMutation({
+    mutationFn: (body: ShopCreateBody) =>
+      apiClient.post<Shop>('/v1/shops', body).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['shops', 'mine'] })
+      onOpenChange(false)
+      setName('')
+      setDomain('')
+      setDescription('')
+      setError(null)
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+        'Failed to create shop. Please try again.'
+      setError(msg)
+    },
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim() || !domain) {
+      setError('Name and domain are required.')
+      return
+    }
+    setError(null)
+    mutation.mutate({
+      name: name.trim(),
+      domain,
+      description: description.trim() || undefined,
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-pixel text-primary">Create Shop</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="shop-name" className="font-pixel text-xs">Shop Name</Label>
+            <Input
+              id="shop-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Green Grove Mart"
+              maxLength={80}
+              disabled={mutation.isPending}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="shop-domain" className="font-pixel text-xs">Domain</Label>
+            <Select value={domain} onValueChange={setDomain} disabled={mutation.isPending}>
+              <SelectTrigger id="shop-domain">
+                <SelectValue placeholder="Select a domain" />
+              </SelectTrigger>
+              <SelectContent>
+                {DOMAIN_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="shop-desc" className="font-pixel text-xs">
+              Description <span className="text-zinc-500 font-body">(optional)</span>
+            </Label>
+            <Input
+              id="shop-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What does your shop sell?"
+              disabled={mutation.isPending}
+            />
+          </div>
+
+          {error && (
+            <p className="font-body text-xs text-red-400">{error}</p>
+          )}
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={mutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={mutation.isPending || !name.trim() || !domain}>
+              {mutation.isPending ? 'Creating…' : 'Create Shop'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -136,7 +305,6 @@ function ChartPlaceholder() {
           </AreaChart>
         </ResponsiveContainer>
 
-        {/* Zero-state overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
           <p className="font-pixel text-xs text-zinc-600 text-center leading-relaxed">
             No sales yet —<br />data appears once your shop is live
@@ -149,6 +317,7 @@ function ChartPlaceholder() {
 
 function VendorDashboardInner() {
   const { user } = useUser()
+  const [showCreateShop, setShowCreateShop] = useState(false)
 
   const { data: profile } = useQuery<UserProfile>({
     queryKey: ['user-profile'],
@@ -177,7 +346,6 @@ function VendorDashboardInner() {
     <AppShell role="vendor" characterType={characterType} displayName={displayName}>
       <div className="max-w-4xl mx-auto space-y-6">
 
-        {/* Page header */}
         <motion.div custom={0} variants={CARD_VARIANTS} initial="hidden" animate="show">
           <h1 className="font-pixel text-2xl font-bold text-primary">Command Center</h1>
           <p className="font-body text-sm text-zinc-500 mt-1">
@@ -185,7 +353,6 @@ function VendorDashboardInner() {
           </p>
         </motion.div>
 
-        {/* Stat row */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-3 gap-4"
           initial="hidden"
@@ -207,7 +374,7 @@ function VendorDashboardInner() {
               value="0"
               icon={Package}
               variant="neutral"
-              subtext="Add via Catalog (Phase 2)"
+              subtext="Add via Catalog"
             />
           </motion.div>
           <motion.div custom={3} variants={CARD_VARIANTS}>
@@ -223,7 +390,16 @@ function VendorDashboardInner() {
 
         {/* Shop section */}
         <motion.section custom={4} variants={CARD_VARIANTS} initial="hidden" animate="show">
-          <h2 className="font-pixel text-sm font-bold text-zinc-300 mb-3">Your Shop</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-pixel text-sm font-bold text-zinc-300">Your Shop</h2>
+            <button
+              onClick={() => setShowCreateShop(true)}
+              className="btn-pixel btn-pixel-sm btn-pixel-primary flex items-center gap-1.5 text-[10px]"
+            >
+              <Plus size={10} />
+              New Shop
+            </button>
+          </div>
 
           {shopsLoading && (
             <div className="panel-block p-5 flex gap-4 animate-pulse">
@@ -253,8 +429,8 @@ function VendorDashboardInner() {
             <EmptyState
               icon={Store}
               title="Your first shop awaits"
-              description="Create a shop, set your domain, and your AI agent will start negotiating for you. Catalog management launches in Phase 2."
-              action={{ label: 'Create shop (Phase 2)', variant: 'primary' }}
+              description="Create a shop, set your domain, and your AI agent will start negotiating for you. A Razorpay payment account is provisioned automatically."
+              action={{ label: 'Create Shop', variant: 'primary', onClick: () => setShowCreateShop(true) }}
             />
           )}
 
@@ -267,12 +443,13 @@ function VendorDashboardInner() {
           )}
         </motion.section>
 
-        {/* Chart placeholder */}
         <motion.div custom={5} variants={CARD_VARIANTS} initial="hidden" animate="show">
           <ChartPlaceholder />
         </motion.div>
 
       </div>
+
+      <CreateShopDialog open={showCreateShop} onOpenChange={setShowCreateShop} />
     </AppShell>
   )
 }

@@ -66,6 +66,44 @@ def update_negotiation_row(
     return row.data[0]
 
 
+def count_completed_deals(consumer_id: str, shop_id: str) -> int:
+    """Prior successful deals between this consumer and this shop.
+
+    `negotiations` has no consumer_id, so we resolve it through the owning
+    mission: count deal-outcome negotiations at `shop_id` across all of this
+    consumer's missions. Powers the loyalty personality's tier lookup.
+    """
+    sb = get_supabase_client()
+    missions = (
+        sb.table("missions").select("id").eq("consumer_id", consumer_id).execute()
+    )
+    mission_ids = [m["id"] for m in (missions.data or [])]
+    if not mission_ids:
+        return 0
+    deals = (
+        sb.table("negotiations")
+        .select("id", count="exact")
+        .eq("shop_id", shop_id)
+        .eq("outcome", "deal")
+        .in_("mission_id", mission_ids)
+        .execute()
+    )
+    if deals.count is not None:
+        return deals.count
+    return len(deals.data or [])
+
+
+def get_loyalty_tier(consumer_id: str, shop_id: str) -> str:
+    """Map prior-deal count to a loyalty tier. Thresholds per Phase 3 doc:
+    >= 5 → frequent, >= 2 → returning, else new."""
+    count = count_completed_deals(consumer_id, shop_id)
+    if count >= 5:
+        return "frequent"
+    if count >= 2:
+        return "returning"
+    return "new"
+
+
 def update_mission_status(
     mission_id: str,
     status: str,

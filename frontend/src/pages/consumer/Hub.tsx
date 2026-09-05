@@ -11,6 +11,7 @@ import {
   Sofa,
   Sword,
   Wallet,
+  Zap,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { AppShell } from '@/components/layout/AppShell'
@@ -29,6 +30,13 @@ interface UserProfile {
   role: string
   display_name: string | null
   avatar_config: { character_type?: string } | null
+}
+
+interface Mission {
+  id: string
+  mode: string
+  status: string
+  parsed_list: { item: string }[]
 }
 
 interface Domain {
@@ -57,7 +65,7 @@ const CARD_VARIANTS = {
   }),
 }
 
-function DomainCard({ domain, index }: { domain: Domain; index: number }) {
+function DomainCard({ domain, index, isActive }: { domain: Domain; index: number; isActive: boolean }) {
   const Icon = domain.icon
   return (
     <motion.div
@@ -65,11 +73,17 @@ function DomainCard({ domain, index }: { domain: Domain; index: number }) {
       variants={CARD_VARIANTS}
       initial="hidden"
       animate="show"
-      className="panel-block p-4 flex flex-col items-center gap-2 text-center"
+      className={`panel-block p-4 flex flex-col items-center gap-2 text-center transition-colors ${
+        isActive ? 'border-primary bg-primary/5' : ''
+      }`}
     >
-      <Icon size={24} className={domain.color} />
+      <Icon size={24} className={isActive ? 'text-primary' : domain.color} />
       <p className="font-pixel text-[11px] font-bold text-white">{domain.label}</p>
-      <span className="badge-pixel badge-pixel-warning text-[9px]">Phase 3</span>
+      {isActive ? (
+        <span className="badge-pixel badge-pixel-primary text-[9px] animate-pulse">Active</span>
+      ) : (
+        <span className="badge-pixel text-[9px] opacity-40">Idle</span>
+      )}
     </motion.div>
   )
 }
@@ -87,6 +101,14 @@ function ConsumerHubInner() {
     queryFn: () => apiClient.get('/v1/wallets/mine').then((r) => r.data),
   })
 
+  // Check for an active swarm mission to light up the domain cards
+  const { data: activeMissions = [] } = useQuery<Mission[]>({
+    queryKey: ['missions', 'active'],
+    queryFn: () => apiClient.get('/v1/missions?status=active&mode=swarm&limit=1').then((r) => r.data).catch(() => []),
+    staleTime: 5_000,
+    refetchInterval: 8_000,
+  })
+
   const characterType = (profile?.avatar_config?.character_type as CharacterType | undefined)
     ?? (user?.unsafeMetadata?.avatar_config as { character_type?: CharacterType } | undefined)?.character_type
 
@@ -102,11 +124,18 @@ function ConsumerHubInner() {
       ? `₹${wallet.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
       : '₹0.00'
 
+  // Determine which domains are currently being scouted
+  const activeSwarm = activeMissions.find((m) => m.mode === 'swarm' && m.status === 'active')
+  const activeDomains = new Set<string>()
+  if (activeSwarm) {
+    // Rough heuristic: mark all domains as active while swarm is running
+    DOMAINS.forEach((d) => activeDomains.add(d.key))
+  }
+
   return (
     <AppShell role="consumer" characterType={characterType} displayName={displayName}>
       <div className="max-w-4xl mx-auto space-y-6">
 
-        {/* Page header */}
         <motion.div custom={0} variants={CARD_VARIANTS} initial="hidden" animate="show">
           <h1 className="font-pixel text-2xl font-bold text-secondary">Field Base</h1>
           <p className="font-body text-sm text-zinc-500 mt-1">
@@ -121,7 +150,7 @@ function ConsumerHubInner() {
               <div className="panel-block border-danger p-5 flex items-center justify-between gap-4 h-full">
                 <div>
                   <p className="font-pixel text-xs text-red-400 mb-1">Wallet unavailable</p>
-                  <p className="font-body text-xs text-zinc-500">Could not load balance. Check your connection.</p>
+                  <p className="font-body text-xs text-zinc-500">Could not load balance.</p>
                 </div>
                 <button onClick={() => window.location.reload()} className="btn-pixel btn-pixel-sm btn-pixel-danger shrink-0">
                   Retry
@@ -134,7 +163,7 @@ function ConsumerHubInner() {
                 icon={Wallet}
                 variant="secondary"
                 loading={walletLoading}
-                subtext="Seeded for Phase 1 testing · INR"
+                subtext="Platform credits · INR"
               />
             )}
           </motion.div>
@@ -167,17 +196,37 @@ function ConsumerHubInner() {
 
         {/* Scout zones */}
         <motion.section custom={3} variants={CARD_VARIANTS} initial="hidden" animate="show">
-          <div className="flex items-center gap-3 mb-3">
-            <h2 className="font-pixel text-sm font-bold text-zinc-300">Scout Zones</h2>
-            <span className="badge-pixel badge-pixel-warning">Phase 3</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <h2 className="font-pixel text-sm font-bold text-zinc-300">Scout Zones</h2>
+              {activeSwarm && (
+                <span className="badge-pixel badge-pixel-primary text-[9px] animate-pulse">
+                  Swarm Active
+                </span>
+              )}
+            </div>
+            <Link
+              to="/consumer/mission/new"
+              search={{ swarm: '1' } as never}
+              className="btn-pixel btn-pixel-sm btn-pixel-secondary flex items-center gap-1.5 text-[10px]"
+            >
+              <Zap size={10} />
+              Swarm Mission
+            </Link>
           </div>
           <p className="font-body text-xs text-zinc-500 mb-4">
-            Scouts will autonomously hunt deals across these domains once the agent engine is live.
+            Swarm mode dispatches one scout per domain in parallel. Each scout negotiates independently
+            and shares a common budget pool protected by atomic reservation.
           </p>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3">
             {DOMAINS.map((domain, i) => (
-              <DomainCard key={domain.key} domain={domain} index={i} />
+              <DomainCard
+                key={domain.key}
+                domain={domain}
+                index={i}
+                isActive={activeDomains.has(domain.key)}
+              />
             ))}
           </div>
         </motion.section>

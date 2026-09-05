@@ -4,7 +4,7 @@ import { useUser } from '@clerk/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckCircle, Clock, Loader2, MessageSquare, Maximize2, User, XCircle } from 'lucide-react'
-import { PhaserGame, type PhaserGameHandle, type ShopClickedData } from '@/components/simulation/PhaserGame'
+import { PhaserGame, type PhaserGameHandle, type ShopClickedData, type AgentClickedData } from '@/components/simulation/PhaserGame'
 import { PaymentApprovalModal, type PaymentRequest } from '@/components/simulation/PaymentApprovalModal'
 import {
   Sheet,
@@ -14,10 +14,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
-import { useApproveMockPayment, useMission } from '@/hooks/useMission'
-import { type Negotiation } from '@/services/missionService'
+import { useApproveMockPayment, useCreatePaymentOrder, useMission } from '@/hooks/useMission'
+import { missionService, type Negotiation } from '@/services/missionService'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import apiClient from '@/services/api'
+
+// Razorpay Checkout.js global injected by index.html
+declare const Razorpay: new (options: Record<string, unknown>) => { open(): void }
 
 interface UserProfile {
   avatar_config: { character_type?: CharacterType } | null
@@ -82,6 +85,14 @@ function NegotiationCard({
               <span className="badge-pixel badge-pixel-primary text-[9px]">Deal</span>
               <p className="font-pixel text-[11px] text-primary mt-0.5">₹{finalPrice.toFixed(0)}</p>
             </>
+          ) : neg.outcome === 'insufficient_balance' ? (
+            <span className="badge-pixel badge-pixel-danger text-[9px]">No funds</span>
+          ) : neg.outcome === 'payment_failed' ? (
+            <span className="badge-pixel badge-pixel-danger text-[9px]">Pay failed</span>
+          ) : neg.outcome === 'timeout' ? (
+            <span className="badge-pixel badge-pixel-warning text-[9px]">Timeout</span>
+          ) : neg.outcome === 'walked_away' ? (
+            <span className="badge-pixel badge-pixel-warning text-[9px]">Deadlock</span>
           ) : neg.outcome ? (
             <span className="badge-pixel badge-pixel-warning text-[9px]">{neg.outcome}</span>
           ) : (
@@ -150,8 +161,10 @@ function SimulationGame({
   const approveMutation = useApproveMockPayment()
   const { data: mission } = useMission(missionId)
 
+  const createOrderMutation = useCreatePaymentOrder()
   const phaserRef = useRef<PhaserGameHandle>(null)
   const [selectedShop, setSelectedShop] = useState<ShopClickedData | null>(null)
+  const [inspectedAgent, setInspectedAgent] = useState<AgentClickedData | null>(null)
   const [showTranscript, setShowTranscript] = useState(false)
   const [wsStatus, setWsStatus] = useState<'connecting' | 'live' | 'disconnected' | 'error'>('connecting')
   const [liveStatus, setLiveStatus] = useState<string>('planning')
@@ -203,9 +216,6 @@ function SimulationGame({
           qc.invalidateQueries({ queryKey: ['mission', missionId] })
           break
         case 'payment_pending':
-          // Real deal — show PaymentApprovalModal with the negotiated price.
-          // Phase 2: on approve, calls POST /api/v1/payments/mock-approve (atomic wallet/stock update).
-          // Phase 3: that endpoint's body becomes real Razorpay MCP — nothing else changes here.
           setPendingPayments((prev) => [
             ...prev,
             {
@@ -214,9 +224,41 @@ function SimulationGame({
               negotiatedPrice: Number(evt.amount),
               originalPrice:   Number(evt.opening_price),
               negotiationId:   String(evt.negotiation_id),
+              paymentMode:     String(evt.payment_mode ?? 'mock'),
             },
           ])
           break
+        // ── Failure scenarios ──────────────────────────────────────────────
+        case 'item_skipped':
+          // Scenario 1: Out of stock
+          setLiveActivity(String(evt.message))
+          break
+        case 'insufficient_balance':
+          // Scenario 3: Wallet too low
+          setLiveActivity(String(evt.message))
+          qc.invalidateQueries({ queryKey: ['mission', missionId] })
+          break
+        case 'payment_failed':
+          // Scenario 4: Razorpay failure
+          setLiveActivity(String(evt.message))
+          setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== String(evt.negotiation_id)))
+          qc.invalidateQueries({ queryKey: ['mission', missionId] })
+          break
+        // ── Swarm events ───────────────────────────────────────────────────
+        case 'swarm_dispatched':
+          setLiveActivity(String(evt.message))
+          break
+        case 'scout_started':
+          setLiveActivity(String(evt.message))
+          break
+        case 'scout_complete':
+          setLiveActivity(String(evt.message))
+          qc.invalidateQueries({ queryKey: ['mission', missionId] })
+          break
+        case 'scout_failed':
+          setLiveActivity(`Scout failed in ${String(evt.domain)}: ${String(evt.reason)}`)
+          break
+        // ──────────────────────────────────────────────────────────────────
         case 'mission_complete':
           setLiveStatus('completed')
           setLiveActivity('Mission complete!')
@@ -256,11 +298,51 @@ function SimulationGame({
   }, [mission?.status])
 
   function handleApprovePayment(req: PaymentRequest) {
-    approveMutation.mutate(req.negotiationId, {
-      onSuccess: () => {
-        setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
-      },
-    })
+    if (req.paymentMode === 'live') {
+      // Live mode: create Razorpay order then open Checkout.js
+      createOrderMutation.mutate(req.negotiationId, {
+        onSuccess: (order) => {
+          const rzp = new Razorpay({
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
+            amount: order.amount,
+            currency: order.currency,
+            order_id: order.order_id,
+            name: 'Agentopolis',
+            description: `${req.itemSummary} — ${req.vendorName}`,
+            handler: (response: Record<string, string>) => {
+              // Optimistic UI update — webhook is the real source of truth
+              missionService.verifyPayment({
+                negotiation_id: req.negotiationId,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }).then(() => {
+                setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
+                qc.invalidateQueries({ queryKey: ['mission', missionId] })
+              }).catch(() => {
+                // Webhook will settle it — safe to dismiss UI
+                setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
+              })
+            },
+            modal: {
+              ondismiss: () => {
+                // User closed Checkout without paying — keep the modal out of the queue
+                setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
+              },
+            },
+            theme: { color: '#5FA632' },
+          })
+          rzp.open()
+        },
+      })
+    } else {
+      // Mock mode (PAYMENT_MODE=mock): atomic Postgres wallet/stock tx
+      approveMutation.mutate(req.negotiationId, {
+        onSuccess: () => {
+          setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
+        },
+      })
+    }
   }
 
   function handleDeclinePayment() {
@@ -278,6 +360,7 @@ function SimulationGame({
         ref={phaserRef}
         avatarConfig={avatarConfig}
         onShopClicked={setSelectedShop}
+        onAgentClicked={setInspectedAgent}
       />
 
       {/* Status overlay — top-left */}
@@ -412,6 +495,73 @@ function SimulationGame({
                 approving={approveMutation.isPending}
               />
             ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Agent inspect sheet — triggered by clicking any sprite in Phaser */}
+      <Sheet
+        open={!!inspectedAgent}
+        onOpenChange={(open) => { if (!open) setInspectedAgent(null) }}
+      >
+        <SheetContent side="left" className="panel-block border-r-2 border-accent-dark w-72 flex flex-col">
+          <SheetHeader className="shrink-0">
+            <SheetTitle className="font-pixel text-secondary text-base">
+              {inspectedAgent?.agentType === 'scout'
+                ? `Scout — ${inspectedAgent.domain ?? 'domain'}`
+                : 'Your Agent'}
+            </SheetTitle>
+            <SheetDescription asChild>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`badge-pixel ${
+                  inspectedAgent?.agentType === 'scout' ? 'badge-pixel-warning' : 'badge-pixel-secondary'
+                }`}>
+                  {inspectedAgent?.agentType}
+                </span>
+                {inspectedAgent?.currentShop && (
+                  <span className="font-body text-[10px] text-zinc-500">@ {inspectedAgent.currentShop}</span>
+                )}
+              </div>
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 mt-4 space-y-4 overflow-y-auto">
+            {/* State */}
+            <div>
+              <p className="font-pixel text-[10px] text-zinc-500 mb-1 uppercase">Status</p>
+              <p className="font-body text-sm text-white capitalize">
+                {inspectedAgent?.state ?? 'idle'}
+              </p>
+            </div>
+
+            {/* Basket so far */}
+            <div>
+              <p className="font-pixel text-[10px] text-zinc-500 mb-2 uppercase">
+                Basket ({inspectedAgent?.basket.length ?? 0} items)
+              </p>
+              {inspectedAgent?.basket.length === 0 ? (
+                <p className="font-body text-xs text-zinc-600">No deals yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {inspectedAgent?.basket.map((b, i) => (
+                    <div key={i} className="panel-block p-2 flex items-center justify-between gap-2">
+                      <div>
+                        <p className="font-body text-xs text-white">{b.item}</p>
+                        <p className="font-body text-[10px] text-zinc-500">{b.shop}</p>
+                      </div>
+                      <p className="font-pixel text-xs text-secondary shrink-0">₹{b.price}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {inspectedAgent?.agentType === 'scout' && (
+              <div>
+                <p className="font-pixel text-[10px] text-zinc-500 mb-1 uppercase">Reports to</p>
+                <p className="font-body text-xs text-zinc-400">Your consumer agent</p>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>

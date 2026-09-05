@@ -13,6 +13,7 @@ export interface PaymentRequest {
   negotiatedPrice: number
   originalPrice: number
   negotiationId: string
+  paymentMode?: string
 }
 
 interface Props {

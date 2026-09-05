@@ -10,12 +10,18 @@ No LLM output ever touches Razorpay directly — non-negotiable.
 """
 from __future__ import annotations
 
+import concurrent.futures
+import logging
 import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app.agents.consumer_agent import ConsumerAgent
     from app.agents.vendor_agent import VendorAgent
+
+logger = logging.getLogger(__name__)
+
+LLM_TIMEOUT_SECONDS = 15.0
 
 # Patterns that indicate prompt-injection attempts from untrusted message content.
 # Vendor/consumer message text passes through sanitize_message() before any LLM sees it.
@@ -72,6 +78,31 @@ class Orchestrator:
 
         return True, ""
 
+    # ── Timeout wrapper (Scenario 5) ──────────────────────────────────────────
+
+    def _call_with_timeout(self, fn, *args, **kwargs) -> dict:
+        """Run any blocking agent call in a thread; walk away on LLM timeout.
+
+        Celery workers are synchronous, so asyncio.wait_for is not available.
+        ThreadPoolExecutor + future.result(timeout=N) is the sync equivalent.
+        The timeout value is generous (15 s) — normal Anthropic calls take 2-5 s.
+        """
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+            future = ex.submit(fn, *args, **kwargs)
+            try:
+                return future.result(timeout=LLM_TIMEOUT_SECONDS)
+            except concurrent.futures.TimeoutError:
+                logger.warning(
+                    "LLM call timed out after %.0fs — forcing walk_away", LLM_TIMEOUT_SECONDS
+                )
+                return {
+                    "action": "walk_away",
+                    "message": "Taking too long to respond — stepping away.",
+                    "reasoning": "LLM_TIMEOUT",
+                    "proposed_price": 0,
+                    "emotion": "neutral",
+                }
+
     # ── Phase 2: negotiation loop + audit-trail persistence ───────────────────
 
     def run_negotiation(
@@ -80,6 +111,7 @@ class Orchestrator:
         vendor_agent: VendorAgent,
         item: dict,
         mission_id: str,
+        agent_id: str = "consumer",
     ) -> dict:
         """Turn-taking loop between ConsumerAgent and VendorAgent.
 
@@ -124,6 +156,7 @@ class Orchestrator:
             {
                 "event": "negotiation_started",
                 "negotiation_id": negotiation_id,
+                "agent_id": agent_id,
                 "shop": vendor_agent.shop_name,
                 "item": item["item"],
                 "opening_price": opening_price,
@@ -139,21 +172,49 @@ class Orchestrator:
         outcome = "no_deal"
         final_price: float | None = None
 
+        # fixed_mrp shops don't negotiate: exactly one round — the vendor states
+        # the fixed price, the consumer accepts it or the negotiation ends as
+        # no_deal. No counter-loop. This is accurate to the personality, not a
+        # stub. Guardrails still run identically to every other personality.
+        is_fixed_mrp = getattr(vendor_agent.config, "personality", "") == "fixed_mrp"
+
         while round_count < self.max_rounds:
             round_count += 1
             context["round_count"] = round_count
             context["remaining_budget"] = consumer_agent.remaining_budget
 
             # ── Vendor turn ──────────────────────────────────────────────────
-            vendor_response = vendor_agent.respond(current_message, context)
+            vendor_response = self._call_with_timeout(
+                vendor_agent.respond, current_message, context
+            )
             vendor_response["speaker"] = "vendor_agent"
-            valid, reason = self.validate_round(vendor_response, context)
-            if not valid:
+
+            # Scenario 5: LLM timeout on vendor side
+            if vendor_response.get("reasoning") == "LLM_TIMEOUT":
+                outcome = "timeout"
+                rounds_log.append(vendor_response)
                 publish_mission_event(
                     mission_id,
-                    {"event": "negotiation_blocked", "round": round_count, "reason": reason},
+                    {
+                        "event": "negotiation_blocked",
+                        "round": round_count,
+                        "reason": "timeout",
+                        "message": f"Vendor at {vendor_agent.config.shop_name} stopped responding. Trying next option.",
+                    },
                 )
-                vendor_response["action"] = "walk_away"  # force safe fallback
+                break
+
+            valid, reason = self.validate_round(vendor_response, context)
+            if not valid:
+                human_reason = {
+                    "below_floor_price": "Vendor price fell below their minimum — guardrail blocked.",
+                    "max_rounds_exceeded": "Too many rounds — negotiation capped.",
+                }.get(reason, reason)
+                publish_mission_event(
+                    mission_id,
+                    {"event": "negotiation_blocked", "round": round_count, "reason": reason, "message": human_reason},
+                )
+                vendor_response["action"] = "walk_away"
                 vendor_response["blocked_reason"] = reason
 
             vendor_response["message"] = self.sanitize_message(vendor_response["message"])
@@ -168,19 +229,51 @@ class Orchestrator:
                 break
             if vendor_response["action"] in ("walk_away", "reject"):
                 outcome = "walked_away"
+                shop_name = vendor_agent.config.shop_name
+                personality = getattr(vendor_agent.config, "personality", "negotiator")
+                if personality == "fixed_mrp":
+                    msg = f"{shop_name} sells at a fixed price and doesn't negotiate. Trying next option."
+                else:
+                    msg = f"Couldn't agree with {shop_name}. Trying next option."
+                publish_mission_event(
+                    mission_id,
+                    {"event": "negotiation_blocked", "round": round_count, "reason": "deadlock", "message": msg},
+                )
                 break
 
             # ── Consumer turn ────────────────────────────────────────────────
-            consumer_response = consumer_agent.negotiate_round(vendor_response, context)
+            consumer_response = self._call_with_timeout(
+                consumer_agent.negotiate_round, vendor_response, context
+            )
             consumer_response["speaker"] = "consumer_agent"
+
+            # Scenario 5: LLM timeout on consumer side
+            if consumer_response.get("reasoning") == "LLM_TIMEOUT":
+                outcome = "timeout"
+                rounds_log.append(consumer_response)
+                publish_mission_event(
+                    mission_id,
+                    {
+                        "event": "negotiation_blocked",
+                        "round": round_count,
+                        "reason": "timeout",
+                        "message": "Agent took too long to respond — negotiation ended.",
+                    },
+                )
+                break
+
             valid, reason = self.validate_round(consumer_response, context)
             if not valid:
+                human_reason = {
+                    "exceeds_budget": f"Agent's counter-offer exceeded remaining budget — guardrail blocked.",
+                    "max_rounds_exceeded": "Too many rounds — negotiation capped.",
+                }.get(reason, reason)
                 consumer_response["message"] = self.sanitize_message(consumer_response["message"])
                 consumer_response["blocked_reason"] = reason
                 rounds_log.append(consumer_response)
                 publish_mission_event(
                     mission_id,
-                    {"event": "negotiation_blocked", "round": round_count, "reason": reason},
+                    {"event": "negotiation_blocked", "round": round_count, "reason": reason, "message": human_reason},
                 )
                 outcome = "no_deal"
                 break
@@ -193,7 +286,21 @@ class Orchestrator:
             )
 
             if consumer_response["action"] == "accept":
-                outcome, final_price = "deal", float(consumer_response["proposed_price"])
+                # fixed_mrp settles at the vendor's stated (fixed) price, never
+                # at whatever number the consumer's accept happens to carry —
+                # this shop does not move off list.
+                accepted_price = (
+                    float(vendor_response["proposed_price"])
+                    if is_fixed_mrp
+                    else float(consumer_response["proposed_price"])
+                )
+                outcome, final_price = "deal", accepted_price
+                break
+
+            # fixed_mrp: the buyer had their one chance to accept the listed
+            # price and didn't — end immediately, no haggling round.
+            if is_fixed_mrp:
+                outcome = "no_deal"
                 break
 
             current_message = consumer_response["message"]
@@ -228,6 +335,7 @@ class Orchestrator:
             {
                 "event": "negotiation_complete",
                 "negotiation_id": negotiation_id,
+                "agent_id": agent_id,
                 "outcome": outcome,
                 "final_price": final_price,
                 "round_count": round_count,

@@ -28,3 +28,17 @@ export function useApproveMockPayment() {
     },
   })
 }
+
+export function useCreatePaymentOrder() {
+  return useMutation({
+    mutationFn: (negotiationId: string) => missionService.createPaymentOrder(negotiationId),
+  })
+}
+
+export function usePaymentMode() {
+  return useQuery({
+    queryKey: ['payment-mode'],
+    queryFn: () => missionService.getPaymentMode(),
+    staleTime: 60_000,
+  })
+}
