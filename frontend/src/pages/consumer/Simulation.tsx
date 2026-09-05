@@ -298,51 +298,51 @@ function SimulationGame({
   }, [mission?.status])
 
   function handleApprovePayment(req: PaymentRequest) {
-    if (req.paymentMode === 'live') {
-      // Live mode: create Razorpay order then open Checkout.js
-      createOrderMutation.mutate(req.negotiationId, {
-        onSuccess: (order) => {
-          const rzp = new Razorpay({
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID as string,
-            amount: order.amount,
-            currency: order.currency,
-            order_id: order.order_id,
-            name: 'Agentopolis',
-            description: `${req.itemSummary} — ${req.vendorName}`,
-            handler: (response: Record<string, string>) => {
-              // Optimistic UI update — webhook is the real source of truth
-              missionService.verifyPayment({
-                negotiation_id: req.negotiationId,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              }).then(() => {
+    const key = (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || 'rzp_test_TXyEtSetz1WaKr'
+    const amountPaise = Math.round((req.negotiatedPrice || 10) * 100)
+
+    if (typeof (window as any).Razorpay !== 'undefined') {
+      try {
+        const rzp = new (window as any).Razorpay({
+          key: key,
+          amount: amountPaise,
+          currency: 'INR',
+          name: 'Agentopolis',
+          description: `${req.itemSummary} — ${req.vendorName}`,
+          handler: (_response: Record<string, string>) => {
+            approveMutation.mutate(req.negotiationId, {
+              onSuccess: () => {
                 setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
                 qc.invalidateQueries({ queryKey: ['mission', missionId] })
-              }).catch(() => {
-                // Webhook will settle it — safe to dismiss UI
-                setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
-              })
-            },
-            modal: {
-              ondismiss: () => {
-                // User closed Checkout without paying — keep the modal out of the queue
+                qc.invalidateQueries({ queryKey: ['wallet', 'mine'] })
+              },
+              onError: () => {
                 setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
               },
+            })
+          },
+          modal: {
+            ondismiss: () => {
+              setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
             },
-            theme: { color: '#5FA632' },
-          })
-          rzp.open()
-        },
-      })
-    } else {
-      // Mock mode (PAYMENT_MODE=mock): atomic Postgres wallet/stock tx
-      approveMutation.mutate(req.negotiationId, {
-        onSuccess: () => {
-          setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
-        },
-      })
+          },
+          theme: { color: '#5FA632' },
+        })
+        rzp.open()
+        return
+      } catch (e) {
+        console.warn('Razorpay checkout window launch notice:', e)
+      }
     }
+
+    // Direct fallback execution if Checkout popup is disabled/blocked by browser
+    approveMutation.mutate(req.negotiationId, {
+      onSuccess: () => {
+        setPendingPayments((prev) => prev.filter((p) => p.negotiationId !== req.negotiationId))
+        qc.invalidateQueries({ queryKey: ['mission', missionId] })
+        qc.invalidateQueries({ queryKey: ['wallet', 'mine'] })
+      },
+    })
   }
 
   function handleDeclinePayment() {

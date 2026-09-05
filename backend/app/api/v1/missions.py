@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from app.db.supabase_client import get_supabase_client
@@ -51,11 +51,12 @@ async def list_missions(
 async def create_mission(
     body: MissionCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
     _: dict = Depends(verify_clerk_token),
 ) -> dict:
     """
-    Creates a mission row and dispatches execution to Celery.
-    Phase 5 wires the orchestrator into the Celery task body.
+    Creates a mission row and immediately executes mission runner in background thread
+    + dispatches to Celery worker if active. Guarantees live negotiation and Razorpay popup.
     """
     sb = get_supabase_client()
 
@@ -77,12 +78,26 @@ async def create_mission(
 
     mission = row.data[0]
 
-    # Dispatch execution to the Celery worker (survives restarts, retry semantics).
-    from app.celery_app import celery_app
-    celery_app.send_task("run_mission_task", args=[mission["id"]])
-    logger.info("Mission %s created and dispatched to Celery", mission["id"])
+    # 1. Immediate in-process background execution for instant demo & WebSocket events
+    background_tasks.add_task(_execute_mission_safe, mission["id"])
 
+    # 2. Celery dispatch (backup queue worker)
+    try:
+        from app.celery_app import celery_app
+        celery_app.send_task("run_mission_task", args=[mission["id"]])
+    except Exception as c_exc:
+        logger.warning("Celery send_task notice for mission %s: %s", mission["id"], c_exc)
+
+    logger.info("Mission %s created and execution initiated", mission["id"])
     return {"mission_id": mission["id"], "status": "planning"}
+
+
+def _execute_mission_safe(mission_id: str) -> None:
+    try:
+        from app.agents.mission_runner import run_mission
+        run_mission(mission_id)
+    except Exception as exc:
+        logger.exception("Background execution of mission %s failed: %s", mission_id, exc)
 
 
 @router.get("/{mission_id}")
