@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { PixelButton } from '@/components/ui/PixelButton'
 import apiClient from '@/services/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import {
   useShopProducts,
   useCreateProduct,
@@ -630,6 +631,7 @@ function ProductSkeleton({ count = 4 }: { count?: number }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function VendorCatalogInner() {
+  usePageTitle('Catalog')
   const { user } = useUser()
   const [formOpen, setFormOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Product | undefined>()

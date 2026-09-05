@@ -19,6 +19,7 @@ import { StatCard } from '@/components/common/StatCard'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import apiClient from '@/services/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface WalletData {
   balance: number
@@ -89,6 +90,7 @@ function DomainCard({ domain, index, isActive }: { domain: Domain; index: number
 }
 
 function ConsumerHubInner() {
+  usePageTitle('Hub')
   const { user } = useUser()
 
   const { data: profile } = useQuery<UserProfile>({

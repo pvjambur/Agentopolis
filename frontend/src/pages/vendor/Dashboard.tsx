@@ -34,6 +34,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import apiClient from '@/services/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 interface Shop {
   id: string
@@ -316,6 +317,7 @@ function ChartPlaceholder() {
 }
 
 function VendorDashboardInner() {
+  usePageTitle('Dashboard')
   const { user } = useUser()
   const [showCreateShop, setShowCreateShop] = useState(false)
 

@@ -24,6 +24,7 @@ import {
 import { useMarketplaceFeed } from '@/hooks/useProducts'
 import type { MarketplaceProduct } from '@/services/productService'
 import apiClient from '@/services/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import { cn } from '@/lib/utils'
 
@@ -310,6 +311,7 @@ function useDebounce<T>(value: T, delay: number): T {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function ConsumerMarketplaceInner() {
+  usePageTitle('Marketplace')
   const { user } = useUser()
   const [domain, setDomain] = useState('')
   const [searchInput, setSearchInput] = useState('')

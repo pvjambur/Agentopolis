@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Sword, Users, Zap } from 'lucide-react'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
 import { useCreateMission } from '@/hooks/useMission'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 const EXAMPLE_INSTRUCTIONS = [
   'Buy 2 kg apples and 1 kg oranges. Budget ₹350.',
@@ -11,6 +12,7 @@ const EXAMPLE_INSTRUCTIONS = [
 ]
 
 function MissionNewInner() {
+  usePageTitle('New Mission')
   const navigate = useNavigate()
   const createMission = useCreateMission()
   // Pre-select swarm mode if linked from Hub's "Swarm Mission" button

@@ -10,6 +10,7 @@ import { Panel } from '@/components/ui/Panel'
 import { useAgentConfig, useSaveVendorConfig } from '@/hooks/useAgentConfig'
 import type { VendorConfig } from '@/services/agentConfigService'
 import apiClient from '@/services/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import { cn } from '@/lib/utils'
 
@@ -336,6 +337,7 @@ function NonNegotiatorNote({ type }: { type: PersonalityType }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 function VendorAgentTrainInner() {
+  usePageTitle('Agent Training')
   const { user } = useUser()
   const { data: agentConfigs, isLoading } = useAgentConfig()
   const save = useSaveVendorConfig()

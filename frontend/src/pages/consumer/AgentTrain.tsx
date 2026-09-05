@@ -9,6 +9,7 @@ import { PixelButton } from '@/components/ui/PixelButton'
 import { Panel } from '@/components/ui/Panel'
 import { useAgentConfig, useSaveConsumerConfig } from '@/hooks/useAgentConfig'
 import apiClient from '@/services/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import { type CharacterType } from '@/data/characterSpriteMap'
 import { cn } from '@/lib/utils'
 
@@ -134,6 +135,7 @@ function PriceQualitySlider({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 function ConsumerAgentTrainInner() {
+  usePageTitle('Agent Training')
   const { user } = useUser()
   const { data: agentConfigs, isLoading } = useAgentConfig()
   const save = useSaveConsumerConfig()
