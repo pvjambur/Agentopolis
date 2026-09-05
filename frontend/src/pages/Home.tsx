@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion'
+import { Menu, X } from 'lucide-react'
 import Phaser from 'phaser'
 import { HeroScene } from '@/phaser/scenes/HeroScene'
 import { LandingMiniScene } from '@/phaser/scenes/LandingMiniScene'
@@ -216,9 +217,10 @@ function WasdPhaserCanvas() {
 function HeroSection() {
   return (
     <section
+      id="hero"
       className="relative flex flex-col md:flex-row overflow-hidden"
       style={{
-        minHeight: 'calc(100vh - 57px)',
+        minHeight: '100vh',
         background: 'linear-gradient(160deg, #0a150a 0%, #0f1f0f 60%, #111827 100%)',
       }}
     >
@@ -344,8 +346,9 @@ const STEPS = [
 function HowItWorksSection() {
   return (
     <section
+      id="how-it-works"
       className="py-20 px-8 md:px-16"
-      style={{ background: 'linear-gradient(180deg, #0f1f0f 0%, #111520 100%)' }}
+      style={{ background: 'linear-gradient(180deg, #0f1f0f 0%, #111520 100%)', scrollMarginTop: '80px' }}
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -413,8 +416,9 @@ const CONSUMER_FEATURES = [
 function TwoSidesSection() {
   return (
     <section
+      id="two-sides"
       className="py-20 px-8 md:px-16"
-      style={{ background: 'linear-gradient(180deg, #111520 0%, #0a150a 100%)' }}
+      style={{ background: 'linear-gradient(180deg, #111520 0%, #0a150a 100%)', scrollMarginTop: '80px' }}
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -436,8 +440,9 @@ function TwoSidesSection() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.55 }}
+          id="for-vendors"
           className="panel-block p-6"
-          style={{ borderColor: '#5FA632', boxShadow: '6px 6px 0 rgba(95,166,50,0.2)' }}
+          style={{ borderColor: '#5FA632', boxShadow: '6px 6px 0 rgba(95,166,50,0.2)', scrollMarginTop: '84px' }}
         >
           <div className="flex items-center gap-3 mb-5">
             <AnimatedSprite charType="char_D_hardhat" size={56} />
@@ -467,8 +472,9 @@ function TwoSidesSection() {
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.55 }}
+          id="for-consumers"
           className="panel-block p-6"
-          style={{ borderColor: '#3B82C4', boxShadow: '6px 6px 0 rgba(59,130,196,0.2)' }}
+          style={{ borderColor: '#3B82C4', boxShadow: '6px 6px 0 rgba(59,130,196,0.2)', scrollMarginTop: '84px' }}
         >
           <div className="flex items-center gap-3 mb-5">
             <AnimatedSprite charType="char_A_green_top" size={56} />
@@ -516,8 +522,9 @@ function MarketPreviewSection() {
 
   return (
     <section
+      id="live-preview"
       ref={sectionRef}
-      style={{ height: '250vh', background: '#0a150a' }}
+      style={{ height: '250vh', background: '#0a150a', scrollMarginTop: '80px' }}
       className="relative"
     >
       <div className="sticky top-0 h-screen overflow-hidden flex items-center">
@@ -595,8 +602,9 @@ const TECH_STACK = [
 function TechSection() {
   return (
     <section
+      id="tech"
       className="py-20 px-8 md:px-16"
-      style={{ background: 'linear-gradient(180deg, #0a150a 0%, #111520 100%)' }}
+      style={{ background: 'linear-gradient(180deg, #0a150a 0%, #111520 100%)', scrollMarginTop: '80px' }}
     >
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -605,6 +613,9 @@ function TechSection() {
         transition={{ duration: 0.5 }}
         className="text-center mb-14"
       >
+        <div className="flex justify-center mb-4">
+          <AnimatedSprite charType="char_D_hardhat" size={56} />
+        </div>
         <span className="badge-pixel badge-pixel-warning mb-4 inline-block">Stack</span>
         <h2 className="font-pixel text-3xl md:text-4xl text-white leading-tight">
           Production-grade.<br />Every layer.
@@ -677,8 +688,9 @@ function KeyCap({ label }: { label: string }) {
 function WasdSection() {
   return (
     <section
+      id="wasd"
       className="py-20 px-8 md:px-16"
-      style={{ background: 'linear-gradient(180deg, #111520 0%, #0a150a 100%)' }}
+      style={{ background: 'linear-gradient(180deg, #111520 0%, #0a150a 100%)', scrollMarginTop: '80px' }}
     >
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
         {/* Left — copy */}
@@ -756,12 +768,16 @@ function WasdSection() {
 function Footer() {
   return (
     <footer
+      id="footer"
       className="py-10 px-8 md:px-16 border-t-2 border-accent-dark"
-      style={{ background: '#050a05' }}
+      style={{ background: '#050a05', scrollMarginTop: '80px' }}
     >
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <span className="font-pixel text-xl text-primary font-bold">Agentopolis</span>
+          <div className="flex items-center gap-2.5">
+            <LogoMark size={26} />
+            <span className="font-pixel text-xl text-primary font-bold">Agentopolis</span>
+          </div>
           <p className="font-body text-xs text-zinc-600 mt-1.5 max-w-xs">
             Gamified agentic commerce. AI agent digital twins negotiate and transact in a live 2D world.
           </p>
@@ -791,18 +807,274 @@ function Footer() {
   )
 }
 
+// ─── LANDING CHROME — persistent nav + section progress rail ─────────────────
+
+interface SectionDef {
+  id: string
+  label: string
+}
+
+// Order matches the DOM order of the 6 sections + footer (one dot per checkpoint)
+const SECTIONS: ReadonlyArray<SectionDef> = [
+  { id: 'hero',         label: 'Top' },
+  { id: 'how-it-works', label: 'How It Works' },
+  { id: 'two-sides',    label: 'Two Sides' },
+  { id: 'live-preview', label: 'Live Preview' },
+  { id: 'tech',         label: 'Tech Stack' },
+  { id: 'wasd',         label: 'Playground' },
+  { id: 'footer',       label: 'Get Started' },
+] as const
+
+const SECTION_IDS: readonly string[] = SECTIONS.map((s) => s.id)
+
+const NAV_LINKS: ReadonlyArray<{ label: string; target: string; section: string }> = [
+  { label: 'How It Works',  target: 'how-it-works', section: 'how-it-works' },
+  { label: 'For Vendors',   target: 'for-vendors',  section: 'two-sides' },
+  { label: 'For Consumers', target: 'for-consumers', section: 'two-sides' },
+  { label: 'Tech',          target: 'tech',         section: 'tech' },
+]
+
+function scrollToId(id: string): void {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+// Scroll-spy via IntersectionObserver (not scroll-position math). A thin band
+// near the top of the viewport marks the "active" section as it crosses.
+function useActiveSection(ids: readonly string[]): string {
+  const [active, setActive] = useState(ids[0] ?? '')
+
+  useEffect(() => {
+    const intersecting = new Set<string>()
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) intersecting.add(entry.target.id)
+          else intersecting.delete(entry.target.id)
+        }
+        const first = ids.find((id) => intersecting.has(id))
+        if (first) setActive(first)
+      },
+      { rootMargin: '-20% 0px -75% 0px', threshold: 0 },
+    )
+
+    ids.forEach((id) => {
+      const el = document.getElementById(id)
+      if (el) obs.observe(el)
+    })
+    return () => obs.disconnect()
+  }, [ids])
+
+  return active
+}
+
+// Pixel-art "A" brand mark — same geometry as public/favicon.svg
+function LogoMark({ size = 28 }: { size?: number }) {
+  return (
+    <span
+      className="inline-flex items-center justify-center shrink-0 overflow-hidden"
+      style={{ width: size, height: size, border: '2px solid #3D7A1F', borderRadius: 4 }}
+    >
+      <svg width={size} height={size} viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden="true">
+        <rect width="16" height="16" fill="#0a150a" />
+        <rect x="4" y="2" width="8" height="2" fill="#5FA632" />
+        <rect x="2" y="4" width="2" height="2" fill="#5FA632" />
+        <rect x="12" y="4" width="2" height="2" fill="#5FA632" />
+        <rect x="2" y="6" width="2" height="2" fill="#5FA632" />
+        <rect x="12" y="6" width="2" height="2" fill="#5FA632" />
+        <rect x="2" y="8" width="12" height="2" fill="#5FA632" />
+        <rect x="2" y="10" width="2" height="2" fill="#5FA632" />
+        <rect x="12" y="10" width="2" height="2" fill="#5FA632" />
+        <rect x="2" y="12" width="2" height="2" fill="#5FA632" />
+        <rect x="12" y="12" width="2" height="2" fill="#5FA632" />
+      </svg>
+    </span>
+  )
+}
+
+function LandingNav({ active }: { active: string }) {
+  const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    // Solid background once scrolled past the hero (transparent over it)
+    const onScroll = () => setScrolled(window.scrollY > window.innerHeight * 0.8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const go = (id: string) => {
+    scrollToId(id)
+    setMenuOpen(false)
+  }
+
+  return (
+    <>
+      <motion.nav
+        initial={{ y: -72 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{
+          background: scrolled ? 'rgba(8,17,8,0.94)' : 'transparent',
+          borderBottom: scrolled ? '2px solid #3D7A1F' : '2px solid transparent',
+          boxShadow: scrolled ? '0 6px 24px rgba(0,0,0,0.45)' : 'none',
+          backdropFilter: scrolled ? 'blur(8px)' : 'none',
+          transition: 'background-color 0.3s, border-color 0.3s, box-shadow 0.3s',
+        }}
+      >
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-5 md:px-8 h-16">
+          <button
+            onClick={() => go('hero')}
+            className="flex items-center gap-2.5 group"
+            aria-label="Agentopolis — back to top"
+          >
+            <LogoMark size={28} />
+            <span className="font-pixel text-lg text-white group-hover:text-primary transition-colors">
+              Agentopolis
+            </span>
+          </button>
+
+          <div className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map((link) => (
+              <button
+                key={link.label}
+                onClick={() => go(link.target)}
+                className={[
+                  'font-pixel text-[13px] px-3 py-2 rounded-sm transition-colors',
+                  active === link.section ? 'text-primary' : 'text-zinc-400 hover:text-white',
+                ].join(' ')}
+              >
+                {link.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="hidden md:flex items-center gap-3">
+            <Link to="/auth/sign-in" className="btn-pixel btn-pixel-ghost btn-pixel-sm">
+              Sign In
+            </Link>
+            <Link to="/auth/sign-up" className="btn-pixel btn-pixel-primary btn-pixel-sm">
+              Get Started
+            </Link>
+          </div>
+
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="md:hidden w-10 h-10 flex items-center justify-center text-white"
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+      </motion.nav>
+
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 md:hidden"
+            onClick={() => setMenuOpen(false)}
+          >
+            <div className="absolute inset-0 bg-black/60" />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="absolute top-0 right-0 h-full w-72 flex flex-col p-6 pt-24 gap-1"
+              style={{ background: '#111827', boxShadow: 'inset 3px 0 0 rgba(61,122,31,0.45)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {NAV_LINKS.map((link) => (
+                <button
+                  key={link.label}
+                  onClick={() => go(link.target)}
+                  className="font-pixel text-left text-base text-zinc-200 hover:text-primary py-3 border-b border-accent-dark/40 transition-colors"
+                >
+                  {link.label}
+                </button>
+              ))}
+              <div className="mt-6 flex flex-col gap-3">
+                <Link
+                  to="/auth/sign-in"
+                  onClick={() => setMenuOpen(false)}
+                  className="btn-pixel btn-pixel-ghost btn-pixel-sm w-full justify-center"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/auth/sign-up"
+                  onClick={() => setMenuOpen(false)}
+                  className="btn-pixel btn-pixel-primary btn-pixel-sm w-full justify-center"
+                >
+                  Get Started
+                </Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+
+function ProgressRail({ active }: { active: string }) {
+  return (
+    <div className="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col items-center gap-4">
+      {SECTIONS.map((s) => {
+        const isActive = active === s.id
+        return (
+          <button
+            key={s.id}
+            onClick={() => scrollToId(s.id)}
+            className="group relative flex items-center justify-center w-4 h-4"
+            aria-label={`Jump to ${s.label}`}
+            aria-current={isActive ? 'true' : undefined}
+          >
+            <span
+              className="absolute right-6 whitespace-nowrap font-pixel text-[10px] text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              style={{ background: 'rgba(5,10,5,0.92)', border: '2px solid #3D7A1F', padding: '2px 8px', borderRadius: 3 }}
+            >
+              {s.label}
+            </span>
+            <span
+              className="rounded-full transition-all duration-300"
+              style={{
+                width: isActive ? 12 : 8,
+                height: isActive ? 12 : 8,
+                background: isActive ? '#5FA632' : 'transparent',
+                border: isActive ? '2px solid #8FD457' : '2px solid #3D7A1F',
+                boxShadow: isActive ? '0 0 10px rgba(95,166,50,0.7)' : 'none',
+              }}
+            />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── PAGE EXPORT ──────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const active = useActiveSection(SECTION_IDS)
   return (
-    <main style={{ background: '#0a150a' }}>
-      <HeroSection />
-      <HowItWorksSection />
-      <TwoSidesSection />
-      <MarketPreviewSection />
-      <TechSection />
-      <WasdSection />
-      <Footer />
-    </main>
+    <>
+      <LandingNav active={active} />
+      <ProgressRail active={active} />
+      <main style={{ background: '#0a150a' }}>
+        <HeroSection />
+        <HowItWorksSection />
+        <TwoSidesSection />
+        <MarketPreviewSection />
+        <TechSection />
+        <WasdSection />
+        <Footer />
+      </main>
+    </>
   )
 }

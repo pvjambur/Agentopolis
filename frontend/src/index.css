@@ -109,6 +109,18 @@
   .btn-pixel-sm.btn-pixel-danger                        { box-shadow: 3px 3px 0 #8B2020; }
   .btn-pixel-sm.btn-pixel-danger:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 #8B2020; }
 
+  /* Ghost / outline (used for secondary nav CTAs — Sign In) */
+  .btn-pixel-ghost {
+    background-color: transparent;
+    border-color: #3D7A1F;
+    box-shadow: 4px 4px 0 #3D7A1F;
+    color: #E5E7EB;
+  }
+  .btn-pixel-ghost:hover:not(:disabled)  { background-color: rgba(95, 166, 50, 0.12); color: #ffffff; }
+  .btn-pixel-ghost:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 #3D7A1F; }
+  .btn-pixel-sm.btn-pixel-ghost                        { box-shadow: 3px 3px 0 #3D7A1F; }
+  .btn-pixel-sm.btn-pixel-ghost:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 #3D7A1F; }
+
   /* ─── Blocky Panels ──────────────────────────────────────────── */
   .panel-block {
     background-color: #2B2B2B;

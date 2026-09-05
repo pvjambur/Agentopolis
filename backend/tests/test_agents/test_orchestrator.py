@@ -204,48 +204,59 @@ def test_check_budget_fails_over_budget():
     assert c.check_budget(500.01) is False
 
 
-# ── NotImplementedError for Phase 3/4 stubs ──────────────────────────────────
+# ── Phase 2 implemented behaviour (deterministic, no network) ────────────────
 
-def test_vendor_respond_raises_not_implemented():
+def test_vendor_build_system_prompt_contains_floor_and_product():
     v = _make_vendor()
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        v.respond("offer me a deal", {})
+    v.product = {"id": "prod-1", "name": "Apples", "price": 100.0, "floor_price": 80.0}
+    prompt = v._build_system_prompt()
+    assert "Apples" in prompt
+    assert "80" in prompt
+    assert "NEVER go below" in prompt
 
 
-def test_vendor_build_system_prompt_raises_not_implemented():
+def test_extract_budget_rupee_symbol():
+    """Safety-critical: the budget figure feeds check_budget(), never trust the LLM."""
+    c = _make_consumer()
+    assert c.extract_budget("Buy 2 kg apples and 1 kg oranges. Budget ₹350.") == 350.0
+
+
+def test_extract_budget_rs_format():
+    c = _make_consumer()
+    assert c.extract_budget("budget is Rs 500 for groceries") == 500.0
+
+
+def test_extract_budget_none_when_absent():
+    c = _make_consumer()
+    assert c.extract_budget("Buy 2 kg apples and 1 kg oranges") is None
+
+
+def test_get_personal_rating_returns_neutral_default():
+    """No ratings table until Phase 3 — deliberate 3.0 stub, not a forgotten TODO."""
+    c = _make_consumer()
+    assert c.get_personal_rating("any-shop-id") == 3.0
+
+
+def test_phase2_stubs_are_implemented():
+    """Scope-completion check: the Phase-1 NotImplementedError stubs are gone."""
+    import inspect
+
+    c = _make_consumer()
     v = _make_vendor()
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        v._build_system_prompt()
-
-
-def test_consumer_parse_shopping_list_raises_not_implemented():
-    c = _make_consumer()
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        c.parse_shopping_list("I need 2kg apples and some mangoes")
-
-
-def test_consumer_plan_route_raises_not_implemented():
-    c = _make_consumer()
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        c.plan_route([])
-
-
-def test_consumer_negotiate_raises_not_implemented():
-    c = _make_consumer()
-    v = _make_vendor()
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        c.negotiate(v, {"name": "Apples", "quantity": 1})
-
-
-def test_orchestrator_run_negotiation_raises_not_implemented():
     o = Orchestrator()
-    c = _make_consumer()
-    v = _make_vendor()
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        o.run_negotiation(c, v, {"name": "Apples"})
+    for fn in (
+        c.parse_shopping_list,
+        c.plan_route,
+        c.negotiate_round,
+        v.respond,
+        v._build_system_prompt,
+        o.run_negotiation,
+    ):
+        assert "NotImplementedError" not in inspect.getsource(fn), fn.__name__
 
 
 def test_orchestrator_execute_payment_raises_not_implemented():
+    """execute_payment is the REAL Razorpay call — still Phase 4, untouched."""
     o = Orchestrator()
     with pytest.raises(NotImplementedError, match="Phase 4"):
         o.execute_payment({"deal_id": "test"})

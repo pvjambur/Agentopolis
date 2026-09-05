@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    agent_config,
     auth,
     internal,
     marketplace,
@@ -20,6 +21,7 @@ from app.api.v1 import (
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(agent_config.router, prefix="/agent-config", tags=["agent-config"])
 api_router.include_router(shops.router, prefix="/shops", tags=["shops"])
 api_router.include_router(products.router, prefix="/products", tags=["products"])
 api_router.include_router(marketplace.router, prefix="/marketplace", tags=["marketplace"])

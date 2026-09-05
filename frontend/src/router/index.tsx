@@ -5,6 +5,7 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  useRouterState,
 } from '@tanstack/react-router'
 import HomePage from '../pages/Home'
 import SignInPage from '../pages/auth/SignIn'
@@ -12,12 +13,22 @@ import SignUpPage from '../pages/auth/SignUp'
 import RoleSelectPage from '../pages/onboarding/RoleSelect'
 import CharacterCreatePage from '../pages/onboarding/CharacterCreate'
 import VendorDashboardPage from '../pages/vendor/Dashboard'
+import VendorCatalogPage from '../pages/vendor/Catalog'
+import VendorAgentTrainPage from '../pages/vendor/AgentTrain'
 import ConsumerHubPage from '../pages/consumer/Hub'
+import ConsumerMarketplacePage from '../pages/consumer/Marketplace'
+import ConsumerAgentTrainPage from '../pages/consumer/AgentTrain'
 import SimulationPage from '../pages/consumer/Simulation'
+import MissionNewPage from '../pages/consumer/MissionNew'
 
 function RootLayout() {
+  const { location } = useRouterState()
+  // The landing page ('/') ships its own overlay nav (LandingNav) with jump
+  // links + scroll behaviour, so the global bar is suppressed there only.
+  const showGlobalNav = location.pathname !== '/'
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {showGlobalNav && (
       <nav className="border-b-2 border-accent-dark px-6 py-3 flex items-center justify-between">
         <Link to="/" className="font-pixel font-bold text-xl text-primary tracking-tight">
           Agentopolis
@@ -42,6 +53,7 @@ function RootLayout() {
           </Show>
         </div>
       </nav>
+      )}
       <Outlet />
     </div>
   )
@@ -79,15 +91,44 @@ const vendorDashboardRoute = createRoute({
   path: '/vendor/dashboard',
   component: VendorDashboardPage,
 })
+const vendorCatalogRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/vendor/catalog',
+  component: VendorCatalogPage,
+})
+const vendorAgentTrainRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/vendor/agent/train',
+  component: VendorAgentTrainPage,
+})
 const consumerHubRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/consumer/hub',
   component: ConsumerHubPage,
 })
+const consumerMarketplaceRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consumer/marketplace',
+  component: ConsumerMarketplacePage,
+})
+const consumerAgentTrainRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consumer/agent/train',
+  component: ConsumerAgentTrainPage,
+})
 const consumerSimulationRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/consumer/simulation',
+  validateSearch: (search: Record<string, unknown>) => ({
+    mission_id: typeof search.mission_id === 'string' ? search.mission_id : undefined,
+  }),
   component: SimulationPage,
+})
+
+const consumerMissionNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/consumer/mission/new',
+  component: MissionNewPage,
 })
 
 const routeTree = rootRoute.addChildren([
@@ -97,8 +138,13 @@ const routeTree = rootRoute.addChildren([
   roleSelectRoute,
   characterCreateRoute,
   vendorDashboardRoute,
+  vendorCatalogRoute,
+  vendorAgentTrainRoute,
   consumerHubRoute,
+  consumerMarketplaceRoute,
+  consumerAgentTrainRoute,
   consumerSimulationRoute,
+  consumerMissionNewRoute,
 ])
 
 export const router = createRouter({ routeTree })

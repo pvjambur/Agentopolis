@@ -7,6 +7,7 @@ import {
   LogOut,
   MapPin,
   Package,
+  ShoppingBag,
   Sword,
   Wallet,
 } from 'lucide-react'
@@ -23,17 +24,19 @@ interface NavItem {
 
 const VENDOR_NAV: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, to: '/vendor/dashboard' },
-  { label: 'Catalog',   icon: Package,         soon: true },
-  { label: 'My Agent',  icon: Bot,             soon: true },
+  { label: 'Catalog',   icon: Package,         to: '/vendor/catalog' },
+  { label: 'My Agent',  icon: Bot,             to: '/vendor/agent/train' },
   { label: 'Wallet',    icon: Wallet,          soon: true },
   { label: 'Reports',   icon: BarChart2,       soon: true },
 ]
 
 const CONSUMER_NAV: NavItem[] = [
-  { label: 'Hub',          icon: LayoutDashboard, to: '/consumer/hub' },
-  { label: 'Marketplace',  icon: Sword,           to: '/consumer/simulation' },
-  { label: 'Wallet',       icon: Wallet,          soon: true },
-  { label: 'Scout Zones',  icon: MapPin,          soon: true },
+  { label: 'Hub',         icon: LayoutDashboard, to: '/consumer/hub' },
+  { label: 'Marketplace', icon: ShoppingBag,     to: '/consumer/marketplace' },
+  { label: 'My Agent',    icon: Bot,             to: '/consumer/agent/train' },
+  { label: 'Simulation',  icon: Sword,           to: '/consumer/mission/new' },
+  { label: 'Wallet',      icon: Wallet,          soon: true },
+  { label: 'Scout Zones', icon: MapPin,          soon: true },
 ]
 
 interface AppShellProps {
